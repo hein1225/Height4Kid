@@ -5,6 +5,7 @@ import AccountManagement from './pages/AccountManagement'
 import Feedback from './pages/Feedback'
 import StandardData from './pages/StandardData'
 import LoginRecords from './pages/LoginRecords'
+import Settings from './pages/Settings'
 
 function Login() {
   const [username, setUsername] = useState('admin');
@@ -86,18 +87,47 @@ function Login() {
   )
 }
 
+function HomePage() {
+  return (
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="text-center p-8 max-w-2xl">
+        <h1 className="text-4xl font-bold text-blue-600 mb-4">身高成长小助手</h1>
+        <p className="text-gray-600 mb-8 text-lg">
+          这是一个帮助家长记录和分析孩子身高成长的工具，通过与国家标准数据对比，评估孩子的生长发育状况。
+        </p>
+        
+        <div className="bg-white p-6 rounded-lg shadow-md mb-8">
+          <h2 className="text-xl font-semibold text-gray-700 mb-4">项目信息</h2>
+          <p className="text-gray-600 mb-4">
+            GitHub仓库地址: <a href="https://github.com/hein1225/Height4Kid" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">https://github.com/hein1225/Height4Kid</a>
+          </p>
+          <p className="text-gray-600 mb-4">
+            安卓客户端下载: <a href="https://github.com/hein1225/Height4Kid/releases" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">https://github.com/hein1225/Height4Kid/releases</a>
+          </p>
+        </div>
+        
+        <div className="text-gray-500 text-sm">
+          <p>© 2026 身高成长小助手</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Login />} />
+        <Route path="/" element={<HomePage />} />
         <Route path="/admin" element={<Admin />}>
+          <Route path="login" element={<Login />} />
           <Route path="account-management" element={<AccountManagement />} />
           <Route path="feedback" element={<Feedback />} />
           <Route path="standard-data" element={<StandardData />} />
           <Route path="login-records" element={<LoginRecords />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
-        <Route path="*" element={<Navigate to="/" />} />
+        <Route path="*" element={<HomePage />} />
       </Routes>
     </Router>
   )
