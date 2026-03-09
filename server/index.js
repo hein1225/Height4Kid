@@ -27,7 +27,17 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'dist')));
 
 // 初始化数据库
-const dbPath = path.join(__dirname, 'database', 'height4kid.db');
+// 从环境变量中读取database目录，默认使用当前目录下的database目录
+const dbDir = process.env.DATABASE_DIR || path.join(__dirname, 'database');
+const dbPath = path.join(dbDir, 'height4kid.db');
+
+// 确保database目录存在
+const fs = require('fs');
+if (!fs.existsSync(dbDir)) {
+  fs.mkdirSync(dbDir, { recursive: true });
+  console.log(`Created database directory: ${dbDir}`);
+}
+
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     console.error('Error opening database:', err.message);

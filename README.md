@@ -107,7 +107,16 @@
 
 #### 需要上传的文件夹
 
-- **仅需上传 `server` 文件夹**到 Zeabur，客户端无需部署到 Zeabur。
+- **上传整个项目仓库**到 Zeabur，然后在 Zeabur 控制台中设置根目录为 `server`。
+
+#### 根目录设置
+
+1. 在 Zeabur 控制台中，选择部署好的服务。
+2. 点击 "Settings" 选项卡。
+3. 找到 "Root Directory" 一栏。
+4. 输入 `server` 作为根目录。
+5. 点击 "Save" 按钮保存设置。
+6. 点击 "Redeploy Service" 重新部署服务。
 
 #### 环境变量设置
 
@@ -117,6 +126,7 @@
 |-----------|-----|------|
 | `PORT` | `8000` | 服务端端口 |
 | `JWT_SECRET` | `your-secret-key` | JWT 签名密钥，建议使用随机生成的字符串 |
+| `DATABASE_DIR` | `/app/database` | 数据库存储目录（可选，默认使用 `server/database`） |
 
 #### 网络设置
 

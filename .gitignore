@@ -5,8 +5,9 @@ node_modules/
 .env
 
 # Build output
-dist/
 build/
+# Allow server/dist to be committed
+!server/dist/
 
 # Logs
 logs
