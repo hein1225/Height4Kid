@@ -14,7 +14,7 @@ function Feedback() {
   const fetchFeedbacks = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8080/api/admin/feedback', {
+      const response = await fetch('/api/admin/feedback', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -37,7 +37,7 @@ function Feedback() {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:8080/api/admin/feedback/${replyingFeedback.id}`, {
+      const response = await fetch(`/api/admin/feedback/${replyingFeedback.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -62,7 +62,7 @@ function Feedback() {
     if (window.confirm('Are you sure you want to delete this feedback?')) {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:8080/api/admin/feedback/${id}`, {
+        const response = await fetch(`/api/admin/feedback/${id}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`,

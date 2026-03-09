@@ -12,7 +12,7 @@ function StandardData() {
   const fetchStandardData = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8080/api/admin/standard-data', {
+      const response = await fetch('http://localhost:8000/api/admin/standard-data', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -36,7 +36,7 @@ function StandardData() {
     if (window.confirm('确定要删除所有国标数据吗？此操作不可恢复。')) {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:8080/api/admin/standard-data/clear', {
+        const response = await fetch('http://localhost:8000/api/admin/standard-data/clear', {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -70,7 +70,7 @@ function StandardData() {
   const handleExportDataXlsx = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8080/api/admin/standard-data/export/xlsx', {
+      const response = await fetch('http://localhost:8000/api/admin/standard-data/export/xlsx', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -119,7 +119,7 @@ function StandardData() {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('http://localhost:8080/api/admin/standard-data/import/xlsx', {
+      const response = await fetch('http://localhost:8000/api/admin/standard-data/import/xlsx', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -144,7 +144,7 @@ function StandardData() {
       const token = localStorage.getItem('token');
       
       // 清空现有数据
-      await fetch('http://localhost:8080/api/admin/standard-data/clear', {
+      await fetch('http://localhost:8000/api/admin/standard-data/clear', {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -153,7 +153,7 @@ function StandardData() {
 
       // 导入新数据
       for (const item of data) {
-        await fetch('http://localhost:8080/api/admin/standard-data', {
+        await fetch('http://localhost:8000/api/admin/standard-data', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,

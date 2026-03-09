@@ -410,10 +410,30 @@ app.get('/api/admin/standard-data/export/xlsx', (req, res) => {
       体重肥胖: row.weight_high
     }));
     
+    // 按性别分组
+    const maleData = data.filter(row => row.性别 === '男').sort((a, b) => {
+      // 提取年龄数字并排序
+      const ageA = parseInt(a.年龄);
+      const ageB = parseInt(b.年龄);
+      return ageA - ageB;
+    });
+    const femaleData = data.filter(row => row.性别 === '女').sort((a, b) => {
+      // 提取年龄数字并排序
+      const ageA = parseInt(a.年龄);
+      const ageB = parseInt(b.年龄);
+      return ageA - ageB;
+    });
+    
     // 创建工作簿
     const wb = xlsx.utils.book_new();
-    const ws = xlsx.utils.json_to_sheet(data);
-    xlsx.utils.book_append_sheet(wb, ws, '国标数据');
+    
+    // 创建男性数据工作表
+    const maleWs = xlsx.utils.json_to_sheet(maleData);
+    xlsx.utils.book_append_sheet(wb, maleWs, '男性数据');
+    
+    // 创建女性数据工作表
+    const femaleWs = xlsx.utils.json_to_sheet(femaleData);
+    xlsx.utils.book_append_sheet(wb, femaleWs, '女性数据');
     
     // 生成Excel文件
     const excelBuffer = xlsx.write(wb, { bookType: 'xlsx', type: 'buffer' });
@@ -436,8 +456,21 @@ app.post('/api/admin/standard-data/import/xlsx', upload.single('file'), (req, re
   try {
     // 读取Excel文件
     const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
-    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-    const data = xlsx.utils.sheet_to_json(worksheet);
+    let allData = [];
+    
+    // 读取所有工作表
+    workbook.SheetNames.forEach(sheetName => {
+      const worksheet = workbook.Sheets[sheetName];
+      const sheetData = xlsx.utils.sheet_to_json(worksheet);
+      allData = allData.concat(sheetData);
+    });
+    
+    // 按年龄排序
+    allData.sort((a, b) => {
+      const ageA = parseInt(a.年龄);
+      const ageB = parseInt(b.年龄);
+      return ageA - ageB;
+    });
     
     // 清空现有数据
     db.run('DELETE FROM standard_data', (err) => {
@@ -447,7 +480,7 @@ app.post('/api/admin/standard-data/import/xlsx', upload.single('file'), (req, re
       
       // 导入新数据
       let count = 0;
-      data.forEach(row => {
+      allData.forEach(row => {
         db.run(
           'INSERT INTO standard_data (age, gender, height_low, height_normal_low, height_normal_high, height_high, weight_low, weight_normal_low, weight_normal_high, weight_overweight, weight_high) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
           [
@@ -468,7 +501,7 @@ app.post('/api/admin/standard-data/import/xlsx', upload.single('file'), (req, re
               console.error('Error inserting standard data:', err.message);
             }
             count++;
-            if (count === data.length) {
+            if (count === allData.length) {
               res.json({ message: 'Standard data imported successfully' });
             }
           }
@@ -672,5 +705,10 @@ app.post('/api/user/analyze-growth', (req, res) => {
       standard
     });
   });
+});
+
+// 处理所有其他请求，返回index.html（用于客户端路由）
+app.use((req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 

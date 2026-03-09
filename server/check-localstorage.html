@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Check Local Storage</title>
+</head>
+<body>
+    <h1>Local Storage Content</h1>
+    <div id="content"></div>
+    
+    <script>
+        const contentDiv = document.getElementById('content');
+        const adminSettings = localStorage.getItem('adminSettings');
+        
+        contentDiv.innerHTML = `
+            <h2>adminSettings:</h2>
+            <pre>${adminSettings || 'null'}</pre>
+            <h2>token:</h2>
+            <pre>${localStorage.getItem('token') || 'null'}</pre>
+            <h2>user:</h2>
+            <pre>${localStorage.getItem('user') || 'null'}</pre>
+        `;
+        
+        // 清除可能有问题的设置
+        function clearSettings() {
+            localStorage.removeItem('adminSettings');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            alert('Local storage cleared!');
+            window.location.reload();
+        }
+    </script>
+    
+    <button onclick="clearSettings()">Clear Local Storage</button>
+</body>
+</html>

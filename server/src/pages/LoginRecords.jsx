@@ -12,7 +12,7 @@ function LoginRecords() {
   const fetchLoginRecords = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8080/api/admin/login-records', {
+      const response = await fetch('http://localhost:8000/api/admin/login-records', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
