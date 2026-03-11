@@ -11,6 +11,12 @@ import WebsiteInfo from './pages/WebsiteInfo'
 import RunningLogs from './pages/RunningLogs'
 import BackupRestore from './pages/BackupRestore'
 import ResetData from './pages/ResetData'
+import UserHomePage from './pages/UserHomePage'
+import UserChildManagement from './pages/UserChildManagement'
+import UserGrowthRecord from './pages/UserGrowthRecord'
+import UserGrowthAnalysis from './pages/UserGrowthAnalysis'
+import UserFeedback from './pages/UserFeedback'
+import UserBackup from './pages/UserBackup'
 
 function Login() {
   // 从本地存储加载项目标题
@@ -26,8 +32,9 @@ function Login() {
     }
     return '身高成长小助手';
   });
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('admin123');
+  
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -37,7 +44,7 @@ function Login() {
     setError('');
 
     try {
-      const response = await fetch('/api/login', {
+      const response = await fetch('/api/admin/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -48,33 +55,27 @@ function Login() {
       const data = await response.json();
 
       if (response.ok) {
-          // 检查用户角色
-          if (data.user.role === 'admin') {
-            // 保存 token 到本地存储
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('user', JSON.stringify(data.user));
-            // 管理员跳转到管理员页面
-            // 从本地存储获取管理员路径设置
-            try {
-              const savedSettings = localStorage.getItem('adminSettings');
-              if (savedSettings) {
-                const settings = JSON.parse(savedSettings);
-                const adminPath = settings.adminPath || '/admin';
-                window.location.href = adminPath;
-              } else {
-                window.location.href = '/admin';
-              }
-            } catch (error) {
-              console.error('Error parsing adminSettings:', error);
-              window.location.href = '/admin';
-            }
+        // 保存 token 到本地存储
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        // 管理员跳转到管理员页面
+        // 从本地存储获取管理员路径设置
+        try {
+          const savedSettings = localStorage.getItem('adminSettings');
+          if (savedSettings) {
+            const settings = JSON.parse(savedSettings);
+            const adminPath = settings.adminPath || '/admin';
+            window.location.href = adminPath;
           } else {
-            // 普通用户登录失败
-            setError('用户名或密码错误');
+            window.location.href = '/admin';
           }
-        } else {
-          setError(data.message || '登录失败');
+        } catch (error) {
+          console.error('Error parsing adminSettings:', error);
+          window.location.href = '/admin';
         }
+      } else {
+        setError(data.message || '登录失败');
+      }
     } catch (err) {
       setError('网络错误，请稍后重试');
     } finally {
@@ -95,7 +96,7 @@ function Login() {
               <input 
                 type="text" 
                 className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="admin"
+                placeholder="请输入用户名"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
               />
@@ -105,7 +106,7 @@ function Login() {
               <input 
                 type="password" 
                 className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="admin123"
+                placeholder="请输入密码"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -123,6 +124,83 @@ function Login() {
     </div>
   )
 }
+
+function UserLogin() {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // 保存 token 到本地存储
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        // 普通用户登录后跳转到用户页面
+        window.location.href = '/user';
+      } else {
+        setError(data.message || '登录失败');
+      }
+    } catch (err) {
+      setError('网络错误，请稍后重试');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="bg-white p-8 rounded-lg shadow-md w-96 mx-auto">
+      <h2 className="text-xl font-semibold text-gray-700 mb-4">用户登录</h2>
+      {error && <div className="text-red-500 mb-4">{error}</div>}
+      <form onSubmit={handleSubmit}>
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">用户名</label>
+          <input 
+            type="text" 
+            className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="请输入用户名"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+        </div>
+        <div className="mb-6">
+          <label className="block text-gray-700 mb-2">密码</label>
+          <input 
+            type="password" 
+            className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="请输入密码"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
+        <button 
+          type="submit" 
+          className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition-colors"
+          disabled={loading}
+        >
+          {loading ? '登录中...' : '登录'}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+
 
 function HomePage() {
   // 从本地存储加载项目标题和首页信息
@@ -160,17 +238,26 @@ function HomePage() {
           {homePageInfo}
         </p>
         
-        <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-          <h2 className="text-xl font-semibold text-gray-700 mb-4">项目信息</h2>
-          <p className="text-gray-600 mb-4">
-            GitHub仓库地址: <a href="https://github.com/hein1225/Height4Kid" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">https://github.com/hein1225/Height4Kid</a>
-          </p>
-          <p className="text-gray-600 mb-4">
-            安卓客户端下载: <a href="https://github.com/hein1225/Height4Kid/releases" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">https://github.com/hein1225/Height4Kid/releases</a>
-          </p>
+        <div className="mb-8">
+          <UserLogin />
         </div>
         
-        <div className="text-gray-500 text-sm">
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold text-gray-700 mb-4">项目信息</h2>
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <p className="text-gray-600 mb-4">
+              GitHub仓库地址: <a href="https://github.com/hein1225/Height4Kid" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">https://github.com/hein1225/Height4Kid</a>
+            </p>
+            <p className="text-gray-600 mb-4">
+              安卓客户端下载: <a href="https://github.com/hein1225/Height4Kid/releases" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">https://github.com/hein1225/Height4Kid/releases</a>
+            </p>
+            <p className="text-gray-600">
+              管理员入口: <a href="/admin/login" className="text-blue-600 hover:underline">点击进入</a>
+            </p>
+          </div>
+        </div>
+        
+        <div className="text-gray-500 text-sm mt-8">
           <p>© 2026 身高成长小助手</p>
         </div>
       </div>
@@ -219,6 +306,12 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/user" element={<UserHomePage />} />
+        <Route path="/user/children" element={<UserChildManagement />} />
+        <Route path="/user/growth-records" element={<UserGrowthRecord />} />
+        <Route path="/user/growth-analysis" element={<UserGrowthAnalysis />} />
+        <Route path="/user/feedback" element={<UserFeedback />} />
+        <Route path="/user/backup" element={<UserBackup />} />
         <Route path={adminPath} element={<Admin />}>
           <Route index element={<ServerInfo />} />
           <Route path="login" element={<Login />} />

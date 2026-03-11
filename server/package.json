@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "concurrently --kill-others=false \"npm run backend\" \"npm run frontend\"",
+    "dev": "concurrently --kill-others=false --prefix-colors green,blue \"npm run backend\" \"npm run frontend\"",
     "backend": "node index.js",
     "frontend": "vite",
     "build": "vite build"
@@ -17,6 +17,8 @@
   "dependencies": {
     "@vitejs/plugin-react": "^5.1.4",
     "autoprefixer": "^10.4.27",
+    "axios": "^1.13.6",
+    "chart.js": "^4.5.1",
     "concurrently": "^9.2.1",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
@@ -25,6 +27,7 @@
     "multer": "^2.1.1",
     "postcss": "^8.5.8",
     "react": "^19.2.4",
+    "react-chartjs-2": "^5.3.1",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.13.1",
     "sqlite3": "^5.1.7",

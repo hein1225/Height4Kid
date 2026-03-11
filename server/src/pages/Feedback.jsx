@@ -58,6 +58,28 @@ function Feedback() {
     }
   };
 
+  const handleStatusChange = async (id, newStatus) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/admin/feedback/${id}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (response.ok) {
+        fetchFeedbacks();
+      } else {
+        setError('Failed to update status');
+      }
+    } catch (err) {
+      setError('Network error');
+    }
+  };
+
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this feedback?')) {
       try {
@@ -99,7 +121,7 @@ function Feedback() {
                   <h3 className="text-md font-semibold text-gray-800">{feedback.title}</h3>
                   <p className="text-gray-600 mt-2">{feedback.content}</p>
                   <p className="text-sm text-gray-500 mt-2">反馈时间: {new Date(feedback.created_at).toLocaleString()}</p>
-                  <p className="text-sm text-gray-500">反馈用户: ID {feedback.user_id}</p>
+                  <p className="text-sm text-gray-500">反馈用户: {feedback.username || '-'}</p>
                 </div>
                 <div>
                   <span className={`px-2 py-1 rounded-md text-xs font-medium ${feedback.status === 'resolved' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
@@ -116,6 +138,21 @@ function Feedback() {
               )}
               
               <div className="mt-4 flex space-x-2">
+                {feedback.status === 'pending' ? (
+                  <button 
+                    className="bg-green-500 text-white px-3 py-1 rounded-md hover:bg-green-600 transition-colors text-sm"
+                    onClick={() => handleStatusChange(feedback.id, 'resolved')}
+                  >
+                    标记为已修复
+                  </button>
+                ) : (
+                  <button 
+                    className="bg-yellow-500 text-white px-3 py-1 rounded-md hover:bg-yellow-600 transition-colors text-sm"
+                    onClick={() => handleStatusChange(feedback.id, 'pending')}
+                  >
+                    标记为待处理
+                  </button>
+                )}
                 {!feedback.reply && (
                   <button 
                     className="bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600 transition-colors text-sm"

@@ -12,7 +12,7 @@ function LoginRecords() {
   const fetchLoginRecords = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8000/api/admin/login-records', {
+      const response = await fetch('/api/admin/login-records', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -46,17 +46,17 @@ function LoginRecords() {
           <table className="min-w-full">
             <thead>
               <tr className="bg-gray-100">
-                <th className="px-4 py-2 text-left">ID</th>
-                <th className="px-4 py-2 text-left">用户ID</th>
+                <th className="px-4 py-2 text-left">序号</th>
+                <th className="px-4 py-2 text-left">用户名</th>
                 <th className="px-4 py-2 text-left">登录时间</th>
                 <th className="px-4 py-2 text-left">IP地址</th>
               </tr>
             </thead>
             <tbody>
-              {loginRecords.map((record) => (
+              {loginRecords.map((record, index) => (
                 <tr key={record.id} className="border-b">
-                  <td className="px-4 py-2">{record.id}</td>
-                  <td className="px-4 py-2">{record.user_id}</td>
+                  <td className="px-4 py-2">{index + 1}</td>
+                  <td className="px-4 py-2">{record.username || '-'}</td>
                   <td className="px-4 py-2">{new Date(record.login_time).toLocaleString()}</td>
                   <td className="px-4 py-2">{record.ip}</td>
                 </tr>

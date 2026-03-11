@@ -18,8 +18,23 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 8000;
 
-// 中间件
-app.use(cors());
+// 增强CORS配置
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
+
+// 处理OPTIONS请求
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+  } else {
+    next();
+  }
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -240,7 +255,7 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-// 登录路由
+// 通用登录路由（支持网页和安卓客户端）
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
 
@@ -272,10 +287,59 @@ app.post('/api/login', (req, res) => {
   });
 });
 
-// 健康检查路由
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok' });
+// 网页管理员登录路由
+app.post('/api/admin/login', (req, res) => {
+  const { username, password } = req.body;
+
+  db.get('SELECT * FROM users WHERE username = ?', [username], (err, user) => {
+    if (err) {
+      return res.status(500).json({ message: 'Database error' });
+    }
+
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid username or password' });
+    }
+
+    // 简单密码验证（实际项目中应使用加密）
+    if (user.password !== password) {
+      return res.status(401).json({ message: 'Invalid username or password' });
+    }
+
+    // 只有管理员可以通过网页登录
+    if (user.role !== 'admin') {
+      return res.status(403).json({ message: '只有管理员可以通过网页登录' });
+    }
+
+    // 生成 JWT token
+    const token = jwt.sign(
+      { id: user.id, username: user.username, role: user.role },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '24h' }
+    );
+
+    // 记录登录
+    db.run('INSERT INTO login_records (user_id, ip) VALUES (?, ?)', [user.id, req.ip]);
+
+    res.json({ token, user: { id: user.id, username: user.username, role: user.role } });
+  });
 });
+
+// 增强健康检查路由
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    version: '1.0.0',
+    server: 'Height4Kid API',
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// 确保服务器保持运行
+setInterval(() => {
+  console.log('Server is running... Uptime:', process.uptime());
+}, 60000);
 
 // 管理员路由
 app.use('/api/admin', authenticateToken, requireAdmin);
@@ -331,7 +395,20 @@ app.delete('/api/admin/users/:id', (req, res) => {
 
 // 问题反馈路由
 app.get('/api/admin/feedback', (req, res) => {
-  db.all('SELECT * FROM feedback', (err, rows) => {
+  db.all(`
+    SELECT 
+      feedback.id,
+      feedback.user_id,
+      feedback.title,
+      feedback.content,
+      feedback.status,
+      feedback.reply,
+      feedback.created_at,
+      users.username 
+    FROM feedback 
+    LEFT JOIN users ON feedback.user_id = users.id
+    ORDER BY feedback.created_at DESC
+  `, (err, rows) => {
     if (err) {
       return res.status(500).json({ message: 'Database error' });
     }
@@ -339,6 +416,28 @@ app.get('/api/admin/feedback', (req, res) => {
   });
 });
 
+// 更新反馈状态（已修复/待处理）
+app.patch('/api/admin/feedback/:id/status', (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  
+  if (status !== 'resolved' && status !== 'pending') {
+    return res.status(400).json({ message: 'Invalid status' });
+  }
+  
+  db.run(
+    'UPDATE feedback SET status = ? WHERE id = ?',
+    [status, id],
+    (err) => {
+      if (err) {
+        return res.status(500).json({ message: 'Database error' });
+      }
+      res.json({ message: 'Feedback status updated successfully' });
+    }
+  );
+});
+
+// 问题反馈回复
 app.put('/api/admin/feedback/:id', (req, res) => {
   const { id } = req.params;
   const { reply } = req.body;
@@ -526,7 +625,17 @@ app.post('/api/admin/standard-data/import/xlsx', upload.single('file'), (req, re
 
 // 登录记录路由
 app.get('/api/admin/login-records', (req, res) => {
-  db.all('SELECT * FROM login_records', (err, rows) => {
+  db.all(`
+    SELECT 
+      login_records.id,
+      login_records.user_id,
+      login_records.login_time,
+      login_records.ip,
+      users.username 
+    FROM login_records 
+    LEFT JOIN users ON login_records.user_id = users.id
+    ORDER BY login_records.login_time DESC
+  `, (err, rows) => {
     if (err) {
       return res.status(500).json({ message: 'Database error' });
     }
@@ -647,10 +756,17 @@ app.post('/api/user/growth-records', (req, res) => {
 // 问题反馈路由
 app.post('/api/user/feedback', (req, res) => {
   const userId = req.user.id;
-  const { title, content } = req.body;
+  const { title, content, type } = req.body;
+  const feedbackTitle = title || type || '问题反馈';
+  const feedbackContent = content;
+  
+  if (!feedbackContent) {
+    return res.status(400).json({ message: '请填写反馈内容' });
+  }
+  
   db.run(
     'INSERT INTO feedback (user_id, title, content) VALUES (?, ?, ?)',
-    [userId, title, content],
+    [userId, feedbackTitle, feedbackContent],
     (err) => {
       if (err) {
         return res.status(500).json({ message: 'Database error' });
@@ -719,6 +835,12 @@ app.post('/api/user/analyze-growth', (req, res) => {
 
 // 处理所有其他请求，返回index.html（用于客户端路由）
 app.use((req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  const indexPath = path.join(__dirname, 'dist', 'index.html');
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    // 在开发模式下，返回简单的HTML页面
+    res.send('<html><body><h1>Height4Kid Server</h1><p>Server is running. Frontend not built yet.</p></body></html>');
+  }
 });
 
