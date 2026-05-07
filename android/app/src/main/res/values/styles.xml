@@ -1,8 +1,0 @@
-<resources>
-    <style name="Theme.Height4Kid" parent="Theme.Material3.Light.NoActionBar">
-        <item name="colorPrimary">@color/peach_pink</item>
-        <item name="colorPrimaryDark">@color/soft_coral</item>
-        <item name="colorAccent">@color/warm_apricot</item>
-        <item name="android:statusBarColor">@color/peach_pink</item>
-    </style>
-</resources>
