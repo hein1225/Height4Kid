@@ -1,6 +1,11 @@
 
 import 'dart:convert';
 
+// Sentinel class for distinguishing between "not passed" and "null" in copyWith
+class _Sentinel {
+  const _Sentinel();
+}
+
 class Child {
   final String id;
   final String name;
@@ -49,7 +54,7 @@ class Child {
     String? name,
     String? gender,
     String? birthday,
-    String? avatar,
+    Object? avatar = const _Sentinel(),
     double? height,
     double? weight,
   }) {
@@ -58,7 +63,7 @@ class Child {
       name: name ?? this.name,
       gender: gender ?? this.gender,
       birthday: birthday ?? this.birthday,
-      avatar: avatar ?? this.avatar,
+      avatar: avatar is _Sentinel ? this.avatar : avatar as String?,
       height: height ?? this.height,
       weight: weight ?? this.weight,
     );

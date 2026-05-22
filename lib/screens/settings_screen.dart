@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../providers/app_provider.dart';
 import '../theme/app_theme.dart';
 import '../utils/permission_manager.dart';
+import '../utils/update_checker.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -61,7 +62,7 @@ class SettingsScreen extends StatelessWidget {
                     const SizedBox(height: 32),
                     _buildSectionTitle('关于'),
                     const SizedBox(height: 16),
-                    _buildAboutCard(),
+                    _buildAboutCard(context),
                   ],
                 ),
               ),
@@ -470,7 +471,7 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAboutCard() {
+  Widget _buildAboutCard(BuildContext context) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -538,6 +539,9 @@ class SettingsScreen extends StatelessWidget {
               color: AppTheme.textLight.withValues(alpha: 0.7),
             ),
           ),
+          const SizedBox(height: 20),
+          // 检查更新按钮
+          _buildUpdateButton(context),
           const SizedBox(height: 20),
           const Divider(height: 1),
           const SizedBox(height: 20),
@@ -649,6 +653,177 @@ class SettingsScreen extends StatelessWidget {
                 ],
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 构建检查更新按钮
+  Widget _buildUpdateButton(BuildContext context) {
+    return StatefulBuilder(
+      builder: (context, setState) {
+        bool isChecking = false;
+
+        return GestureDetector(
+          onTap: isChecking
+              ? null
+              : () async {
+                  setState(() => isChecking = true);
+
+                  final updateInfo = await UpdateChecker.checkUpdate(force: true);
+
+                  if (context.mounted) {
+                    setState(() => isChecking = false);
+
+                    if (updateInfo == null) {
+                      // 检查失败
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('检查更新失败，请检查网络连接'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    } else if (updateInfo.hasUpdate) {
+                      // 有新版本
+                      _showUpdateDialog(context, updateInfo);
+                    } else {
+                      // 已经是最新版本
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('当前已是最新版本 (${UpdateChecker.currentVersion})'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  }
+                },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.green, Colors.green.shade600],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.green.withValues(alpha: 0.3),
+                  blurRadius: 15,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isChecking)
+                  const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                else
+                  const Icon(
+                    Icons.system_update,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                const SizedBox(width: 8),
+                Text(
+                  isChecking ? '检查中...' : '检查更新',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // 显示更新对话框
+  void _showUpdateDialog(BuildContext context, UpdateInfo updateInfo) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.system_update, color: Colors.green, size: 28),
+            const SizedBox(width: 8),
+            const Text('发现新版本'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('当前版本: ${UpdateChecker.currentVersion}'),
+            Text('最新版本: ${updateInfo.version}'),
+            const SizedBox(height: 12),
+            const Text(
+              '💡 建议先备份数据后再更新',
+              style: TextStyle(
+                color: Colors.orange,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (updateInfo.releaseNotes.isNotEmpty) ...[
+              const Text(
+                '更新内容:',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 4),
+              Container(
+                constraints: const BoxConstraints(maxHeight: 150),
+                child: SingleChildScrollView(
+                  child: Text(
+                    updateInfo.releaseNotes,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              UpdateChecker.skipVersion(updateInfo.version);
+              Navigator.pop(context);
+            },
+            child: const Text('跳过此版本'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('稍后提醒'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final uri = Uri.parse(updateInfo.downloadUrl);
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('前往更新'),
           ),
         ],
       ),

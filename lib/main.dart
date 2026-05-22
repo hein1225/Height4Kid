@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'providers/app_provider.dart';
 import 'theme/app_theme.dart';
 import 'screens/home_screen.dart';
@@ -11,6 +12,7 @@ import 'screens/children_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/permission_wizard_screen.dart';
 import 'utils/permission_manager.dart';
+import 'utils/update_checker.dart';
 import 'models/child.dart';
 
 void main() {
@@ -133,8 +135,108 @@ class _HeightKidAppState extends State<HeightKidApp> {
   }
 }
 
-class MainScreen extends StatelessWidget {
+class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
+
+  @override
+  State<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends State<MainScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // 延迟检查更新，等待页面加载完成
+    Future.delayed(const Duration(seconds: 2), () {
+      _checkUpdate();
+    });
+  }
+
+  Future<void> _checkUpdate() async {
+    final updateInfo = await UpdateChecker.checkUpdate();
+    if (updateInfo != null && updateInfo.hasUpdate && mounted) {
+      _showUpdateDialog(updateInfo);
+    }
+  }
+
+  void _showUpdateDialog(UpdateInfo updateInfo) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.system_update, color: Colors.green, size: 28),
+            const SizedBox(width: 8),
+            const Text('发现新版本'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('当前版本: ${UpdateChecker.currentVersion}'),
+            Text('最新版本: ${updateInfo.version}'),
+            const SizedBox(height: 12),
+            const Text(
+              '💡 建议先备份数据后再更新',
+              style: TextStyle(
+                color: Colors.orange,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (updateInfo.releaseNotes.isNotEmpty) ...[
+              const Text(
+                '更新内容:',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 4),
+              Container(
+                constraints: const BoxConstraints(maxHeight: 150),
+                child: SingleChildScrollView(
+                  child: Text(
+                    updateInfo.releaseNotes,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              UpdateChecker.skipVersion(updateInfo.version);
+              Navigator.pop(context);
+            },
+            child: const Text('跳过此版本'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('稍后提醒'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final uri = Uri.parse(updateInfo.downloadUrl);
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('前往更新'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

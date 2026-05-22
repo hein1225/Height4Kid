@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../theme/app_theme.dart';
@@ -567,43 +568,78 @@ class _GrowthChartState extends State<GrowthChart> {
     final records = appProvider.getSortedRecords();
     final kid = appProvider.currentKid;
 
+    // 强制横屏
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+
     showDialog(
       context: context,
       barrierDismissible: true,
-      builder: (context) => Dialog.fullscreen(
-        child: Scaffold(
-          backgroundColor: isPink ? AppTheme.pinkBg : AppTheme.blueBg,
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            leading: IconButton(
-              icon: const Icon(Icons.close, color: AppTheme.textDark),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            title: Text(
-              isHeight ? '身高成长曲线 (1-18岁)' : '体重成长曲线 (1-18岁)',
-              style: const TextStyle(
-                color: AppTheme.textDark,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
+      builder: (context) => WillPopScope(
+        onWillPop: () async {
+          // 恢复屏幕方向
+          SystemChrome.setPreferredOrientations([
+            DeviceOrientation.portraitUp,
+            DeviceOrientation.portraitDown,
+            DeviceOrientation.landscapeLeft,
+            DeviceOrientation.landscapeRight,
+          ]);
+          return true;
+        },
+        child: Dialog.fullscreen(
+          child: Scaffold(
+            backgroundColor: isPink ? AppTheme.pinkBg : AppTheme.blueBg,
+            appBar: AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.close, color: AppTheme.textDark),
+                onPressed: () {
+                  // 恢复屏幕方向
+                  SystemChrome.setPreferredOrientations([
+                    DeviceOrientation.portraitUp,
+                    DeviceOrientation.portraitDown,
+                    DeviceOrientation.landscapeLeft,
+                    DeviceOrientation.landscapeRight,
+                  ]);
+                  Navigator.of(context).pop();
+                },
               ),
+              title: Text(
+                isHeight ? '身高成长曲线 (1-18岁)' : '体重成长曲线 (1-18岁)',
+                style: const TextStyle(
+                  color: AppTheme.textDark,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              centerTitle: true,
             ),
-            centerTitle: true,
-          ),
-          body: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: _FullscreenChartContent(
-                isHeight: isHeight,
-                isPink: isPink,
-                records: records,
-                kid: kid,
+            body: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: _FullscreenChartContent(
+                  isHeight: isHeight,
+                  isPink: isPink,
+                  records: records,
+                  kid: kid,
+                ),
               ),
             ),
           ),
         ),
       ),
-    );
+    ).then((_) {
+      // 确保恢复屏幕方向
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+    });
   }
 
   Widget _buildCurrentValue(dynamic latestRecord, bool isHeight, bool isPink) {
