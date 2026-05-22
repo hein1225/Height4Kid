@@ -1,0 +1,3317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>身高成长小助手</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --pink-primary: #FF9A9E;
+            --pink-secondary: #FECFEF;
+            --pink-bg: #FFF0F5;
+            --blue-primary: #74B9FF;
+            --blue-secondary: #A8D8FF;
+            --blue-bg: #F0F8FF;
+            --text-dark: #2D3436;
+            --text-light: #636E72;
+            --white: #FFFFFF;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #FFF0F5 0%, #FFE4E8 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            transition: background 0.5s ease;
+        }
+
+        body.theme-blue {
+            background: linear-gradient(135deg, #F0F8FF 0%, #E3F2FD 100%);
+        }
+
+        .phone-frame {
+            width: 100%;
+            max-width: 430px;
+            height: 932px;
+            background: var(--white);
+            border-radius: 40px;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .app-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* Header */
+        .header {
+            padding: 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        .back-btn, .camera-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover, .camera-btn:hover {
+            background: rgba(255, 255, 255, 0.95);
+            transform: scale(1.05);
+        }
+
+        .back-btn svg, .camera-btn svg {
+            width: 24px;
+            height: 24px;
+            color: var(--text-dark);
+        }
+
+        .header-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        /* Hero Section */
+        .hero-section {
+            position: relative;
+            padding: 0 24px 20px;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .hero-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 420px;
+            background: linear-gradient(180deg, #FFE4E8 0%, #FFF0F5 50%, #FFFFFF 100%);
+            border-radius: 0 0 40px 40px;
+            overflow: hidden;
+        }
+
+        body.theme-blue .hero-bg {
+            background: linear-gradient(180deg, #E3F2FD 0%, #F0F8FF 50%, #FFFFFF 100%);
+        }
+
+        .cloud {
+            position: absolute;
+            background: linear-gradient(180deg, #ffffff 0%, #f0f4f8 100%);
+            border-radius: 50%;
+            opacity: 0.9;
+            animation: float 8s ease-in-out infinite;
+            box-shadow: 0 8px 20px rgba(200, 200, 200, 0.3);
+        }
+
+        .cloud-1 {
+            width: 120px;
+            height: 70px;
+            top: 35px;
+            right: 25px;
+            animation-delay: 0s;
+        }
+
+        .cloud-2 {
+            width: 85px;
+            height: 55px;
+            top: 75px;
+            left: 35px;
+            animation-delay: 3s;
+        }
+
+        .cloud::before, .cloud::after {
+            content: '';
+            position: absolute;
+            background: linear-gradient(180deg, #ffffff 0%, #f0f4f8 100%);
+            border-radius: 50%;
+        }
+
+        .cloud-1::before {
+            width: 70px;
+            height: 70px;
+            top: -30px;
+            left: 15px;
+        }
+
+        .cloud-1::after {
+            width: 58px;
+            height: 58px;
+            top: -20px;
+            right: 15px;
+        }
+
+        .cloud-2::before {
+            width: 55px;
+            height: 55px;
+            top: -22px;
+            left: 10px;
+        }
+
+        .cloud-2::after {
+            width: 48px;
+            height: 48px;
+            top: -15px;
+            right: 8px;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .star {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            animation: twinkle 2s ease-in-out infinite;
+        }
+
+        .star-1 { top: 120px; left: 60px; animation-delay: 0.5s; }
+        .star-2 { top: 100px; right: 80px; animation-delay: 1s; }
+        .star-3 { top: 160px; right: 50px; animation-delay: 1.5s; }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(0.9); }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 5;
+            padding-top: 10px;
+        }
+
+        .avatar-container {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            margin-bottom: 20px;
+        }
+
+        .avatar-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: white;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .avatar-img {
+            width: 105px;
+            height: 105px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .character-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .character-container {
+            position: relative;
+            width: 280px;
+            height: 300px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .character-container::before {
+            content: '';
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 100px;
+            background: radial-gradient(ellipse at center, rgba(255, 154, 158, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            z-index: 1;
+        }
+
+        body.theme-blue .character-container::before {
+            background: radial-gradient(ellipse at center, rgba(116, 185, 255, 0.15) 0%, transparent 70%);
+        }
+
+        .ground {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 280px;
+            height: 70px;
+            background: linear-gradient(180deg, #FFE4E8 0%, #FFD4D9 50%, #FFC9CF 100%);
+            border-radius: 50%;
+            box-shadow: 0 -5px 20px rgba(255, 196, 200, 0.4);
+        }
+
+        body.theme-blue .ground {
+            background: linear-gradient(180deg, #E1F5FE 0%, #BBDEFB 50%, #90CAF9 100%);
+            box-shadow: 0 -5px 20px rgba(144, 202, 249, 0.4);
+        }
+
+        .grass {
+            position: absolute;
+            bottom: 35px;
+            width: 14px;
+            height: 26px;
+            background: linear-gradient(180deg, #A5D6A7 0%, #81C784 50%, #66BB6A 100%);
+            border-radius: 50% 50% 0 0;
+            transform-origin: bottom center;
+            box-shadow: 0 2px 4px rgba(102, 187, 106, 0.3);
+        }
+
+        .grass-1 { left: 35px; transform: rotate(-18deg); animation: sway1 3s ease-in-out infinite; }
+        .grass-2 { left: 55px; transform: rotate(-5deg); animation: sway2 3s ease-in-out infinite 0.5s; }
+        .grass-3 { right: 45px; transform: rotate(18deg); animation: sway3 3s ease-in-out infinite 1s; }
+        .grass-4 { right: 25px; transform: rotate(5deg); animation: sway4 3s ease-in-out infinite 1.5s; }
+
+        @keyframes sway1 {
+            0%, 100% { transform: rotate(-18deg); }
+            50% { transform: rotate(-13deg); }
+        }
+
+        @keyframes sway2 {
+            0%, 100% { transform: rotate(-5deg); }
+            50% { transform: rotate(0deg); }
+        }
+
+        @keyframes sway3 {
+            0%, 100% { transform: rotate(18deg); }
+            50% { transform: rotate(23deg); }
+        }
+
+        @keyframes sway4 {
+            0%, 100% { transform: rotate(5deg); }
+            50% { transform: rotate(10deg); }
+        }
+
+        .character-illustration {
+            position: relative;
+            z-index: 2;
+            width: 220px;
+            height: auto;
+            object-fit: contain;
+            filter: drop-shadow(0 15px 35px rgba(0, 0, 0, 0.12));
+        }
+
+        /* Data Tags */
+        .data-tags {
+            position: absolute;
+            z-index: 10;
+        }
+
+        .height-tag {
+            right: -50px;
+            top: 40px;
+        }
+
+        .weight-tag {
+            left: -50px;
+            top: 140px;
+        }
+
+        .data-tag {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 12px 20px;
+            border-radius: 25px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .data-tag-icon {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--pink-primary);
+        }
+
+        body.theme-blue .data-tag-icon {
+            background: var(--blue-primary);
+        }
+
+        .data-tag-label {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-dark);
+        }
+
+        .data-tag-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--pink-primary);
+        }
+
+        body.theme-blue .data-tag-value {
+            color: var(--blue-primary);
+        }
+
+        /* Chart Section */
+        .chart-section {
+            padding: 0 24px 20px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 30px;
+            padding: 20px 24px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+        }
+
+        /* 书签标签样式 */
+        .chart-tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .chart-tab {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 20px;
+            background: #f5f5f5;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .chart-tab:hover {
+            background: #e8e8e8;
+        }
+
+        .chart-tab.active {
+            background: linear-gradient(135deg, rgba(255, 154, 158, 0.2), rgba(254, 207, 239, 0.2));
+            border: 2px solid var(--pink-primary);
+        }
+
+        body.theme-blue .chart-tab.active {
+            background: linear-gradient(135deg, rgba(116, 185, 255, 0.2), rgba(168, 216, 255, 0.2));
+            border: 2px solid var(--blue-primary);
+        }
+
+        .chart-tab span {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .chart-tab-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .chart-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chart-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--pink-primary);
+        }
+
+        body.theme-blue .chart-dot {
+            background: var(--blue-primary);
+        }
+
+        .chart-title-text {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .chart-subtitle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: var(--text-light);
+        }
+
+        .chart-subtitle-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #AED581;
+        }
+
+        /* Chart */
+        .chart-container {
+            height: 180px;
+            position: relative;
+            padding-top: 20px;
+        }
+
+        .chart-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 30px;
+        }
+
+        .chart-grid-line {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #E8E8E8;
+            border-bottom: 1px dashed #E0E0E0;
+        }
+
+        .chart-grid-line:nth-child(1) { top: 0; }
+        .chart-grid-line:nth-child(2) { top: 25%; }
+        .chart-grid-line:nth-child(3) { top: 50%; }
+        .chart-grid-line:nth-child(4) { top: 75%; }
+
+        .chart-y-label {
+            position: absolute;
+            left: 0;
+            font-size: 12px;
+            color: #B0B0B0;
+            transform: translateY(-50%);
+        }
+
+        .chart-y-label:nth-child(1) { top: 0; }
+        .chart-y-label:nth-child(2) { top: 20%; }
+        .chart-y-label:nth-child(3) { top: 40%; }
+        .chart-y-label:nth-child(4) { top: 60%; }
+        .chart-y-label:nth-child(5) { top: 80%; }
+        .chart-y-label:nth-child(6) { top: 100%; }
+
+        .chart-line-container {
+            position: absolute;
+            top: 0;
+            left: 40px;
+            right: 0;
+            bottom: 30px;
+        }
+
+        .chart-svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .chart-area {
+            fill: url(#gradient);
+            opacity: 0.3;
+        }
+
+        .chart-line {
+            fill: none;
+            stroke: var(--pink-primary);
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        body.theme-blue .chart-line {
+            stroke: var(--blue-primary);
+        }
+
+        .chart-point {
+            fill: var(--pink-primary);
+            stroke: white;
+            stroke-width: 3;
+        }
+
+        body.theme-blue .chart-point {
+            fill: var(--blue-primary);
+        }
+
+        .chart-point-highlight {
+            fill: #FFD54F;
+            stroke: white;
+            stroke-width: 4;
+        }
+
+        .chart-x-labels {
+            position: absolute;
+            bottom: 0;
+            left: 40px;
+            right: 0;
+            height: 20px;
+        }
+
+        .chart-x-label {
+            font-size: 11px;
+            color: #B0B0B0;
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            background: white;
+            padding: 12px 24px 24px;
+            box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.06);
+            position: relative;
+            z-index: 20;
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #F8F8F8;
+            border-radius: 30px;
+            padding: 8px;
+        }
+
+        .nav-btn {
+            flex: 1;
+            padding: 14px 20px;
+            border: none;
+            background: transparent;
+            border-radius: 24px;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-light);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+
+        .nav-btn.active {
+            background: white;
+            color: var(--text-dark);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .add-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--pink-primary) 0%, var(--pink-secondary) 100%);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 25px rgba(255, 154, 158, 0.4);
+            transition: all 0.3s ease;
+            margin: 0 12px;
+        }
+
+        body.theme-blue .add-btn {
+            background: linear-gradient(135deg, var(--blue-primary) 0%, var(--blue-secondary) 100%);
+            box-shadow: 0 8px 25px rgba(116, 185, 255, 0.4);
+        }
+
+        .add-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .add-btn svg {
+            width: 28px;
+            height: 28px;
+            color: white;
+        }
+
+        /* Page transitions */
+        .page {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+        }
+
+        .page.active {
+            display: flex;
+        }
+
+        /* Record Page */
+        .record-page {
+            padding: 0 24px;
+        }
+
+        .record-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 24px;
+            padding: 0 24px;
+        }
+
+        .record-form {
+            background: white;
+            border-radius: 30px;
+            padding: 28px 24px;
+            margin: 0 24px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid #F0F0F0;
+            border-radius: 16px;
+            font-size: 16px;
+            font-family: 'Noto Sans SC', sans-serif;
+            transition: all 0.3s ease;
+            background: #FAFAFA;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--pink-primary);
+            background: white;
+        }
+
+        body.theme-blue .form-input:focus {
+            border-color: var(--blue-primary);
+        }
+
+        .form-input-row {
+            display: flex;
+            gap: 16px;
+        }
+
+        .form-input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        .form-unit {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light);
+            font-size: 15px;
+        }
+
+        .save-btn {
+            width: 100%;
+            padding: 18px;
+            border: none;
+            border-radius: 20px;
+            background: linear-gradient(135deg, var(--pink-primary) 0%, var(--pink-secondary) 100%);
+            color: white;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Noto Sans SC', sans-serif;
+            margin-top: 12px;
+        }
+
+        body.theme-blue .save-btn {
+            background: linear-gradient(135deg, var(--blue-primary) 0%, var(--blue-secondary) 100%);
+        }
+
+        .save-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 154, 158, 0.4);
+        }
+
+        body.theme-blue .save-btn:hover {
+            box-shadow: 0 8px 25px rgba(116, 185, 255, 0.4);
+        }
+
+        /* History Page */
+        .history-page {
+            padding: 0 24px;
+        }
+
+        .history-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 20px;
+            padding: 0 24px;
+        }
+
+        .history-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 24px 20px;
+        }
+
+        .history-item {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .history-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .history-date {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .history-data {
+            display: flex;
+            gap: 24px;
+        }
+
+        .history-data-item {
+            text-align: right;
+        }
+
+        .history-data-label {
+            font-size: 12px;
+            color: var(--text-light);
+        }
+
+        .history-data-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--pink-primary);
+        }
+
+        body.theme-blue .history-data-value {
+            color: var(--blue-primary);
+        }
+
+        /* Kids Page */
+        .kids-page {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .kids-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .kid-item {
+            background: white;
+            border-radius: 24px;
+            padding: 20px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 3px solid transparent;
+        }
+
+        .kid-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .kid-item.selected {
+            border-color: var(--pink-primary);
+        }
+
+        body.theme-blue .kid-item.selected {
+            border-color: var(--blue-primary);
+        }
+
+        .kid-avatar {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--pink-primary) 0%, var(--pink-secondary) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        body.theme-blue .kid-avatar {
+            background: linear-gradient(135deg, var(--blue-primary) 0%, var(--blue-secondary) 100%);
+        }
+
+        .kid-avatar svg {
+            width: 36px;
+            height: 36px;
+            color: white;
+        }
+
+        .kid-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        .kid-info {
+            flex: 1;
+        }
+
+        .kid-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 6px;
+        }
+
+        .kid-details {
+            font-size: 14px;
+            color: var(--text-light);
+            display: flex;
+            gap: 16px;
+        }
+
+        .kid-detail-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .kid-detail-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--text-light);
+        }
+
+        .kid-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .kid-action-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #f5f5f5;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .kid-action-btn:hover {
+            background: #e0e0e0;
+            transform: scale(1.05);
+        }
+
+        .kid-action-btn.delete:hover {
+            background: #ffe5e5;
+        }
+
+        .kid-action-btn svg {
+            width: 20px;
+            height: 20px;
+            color: var(--text-light);
+        }
+
+        .kid-action-btn.delete svg {
+            color: #ff6b6b;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 32px;
+            width: 100%;
+            max-width: 400px;
+            padding: 32px;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #f5f5f5;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .gender-select {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .gender-option {
+            flex: 1;
+            padding: 20px;
+            border: 3px solid #e0e0e0;
+            border-radius: 20px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .gender-option:hover {
+            border-color: var(--pink-primary);
+        }
+
+        .gender-option.selected {
+            border-color: var(--pink-primary);
+            background: linear-gradient(135deg, rgba(255, 154, 158, 0.1) 0%, rgba(254, 207, 239, 0.1) 100%);
+        }
+
+        body.theme-blue .gender-option:hover,
+        body.theme-blue .gender-option.selected {
+            border-color: var(--blue-primary);
+        }
+
+        body.theme-blue .gender-option.selected {
+            background: linear-gradient(135deg, rgba(116, 185, 255, 0.1) 0%, rgba(168, 216, 255, 0.1) 100%);
+        }
+
+        .gender-icon {
+            font-size: 48px;
+            margin-bottom: 8px;
+        }
+
+        .gender-label {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        /* Theme Toggle */
+        .theme-toggle {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+        }
+
+        .theme-toggle svg {
+            width: 28px;
+            height: 28px;
+        }
+
+        /* Home indicator */
+        .home-indicator {
+            width: 134px;
+            height: 5px;
+            background: #000;
+            border-radius: 100px;
+            margin: 0 auto 8px;
+        }
+
+        /* Age badge */
+        .age-badge {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, var(--pink-primary) 0%, var(--pink-secondary) 100%);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            z-index: 15;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        body.theme-blue .age-badge {
+            background: linear-gradient(135deg, var(--blue-primary) 0%, var(--blue-secondary) 100%);
+        }
+
+        /* Settings page */
+        .settings-page {
+            padding: 20px;
+            height: calc(100% - 70px);
+            overflow-y: auto;
+        }
+
+        .settings-list {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .settings-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 20px;
+            border-bottom: 1px solid #f5f5f5;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .settings-item:last-child {
+            border-bottom: none;
+        }
+
+        .settings-item:active {
+            background-color: #f9f9f9;
+        }
+
+        .settings-item-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .settings-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .backup-icon {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .restore-icon {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .theme-icon {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .settings-icon svg {
+            width: 20px;
+            height: 20px;
+            stroke: white;
+        }
+
+        .settings-label {
+            font-size: 16px;
+            font-weight: 500;
+            color: #2d3436;
+        }
+
+        .settings-arrow {
+            width: 20px;
+            height: 20px;
+            stroke: #999;
+        }
+
+        /* Fullscreen Chart */
+        .fullscreen-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .fullscreen-overlay.active {
+            display: flex;
+        }
+
+        .fullscreen-content {
+            width: 100%;
+            height: 100%;
+            background: white;
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .fullscreen-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.1);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .fullscreen-close svg {
+            width: 24px;
+            height: 24px;
+            color: #2D3436;
+        }
+
+        .fullscreen-header {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2D3436;
+            padding: 30px;
+            text-align: center;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .fullscreen-chart-container {
+            height: calc(100% - 90px);
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fullscreen-chart-container .chart-container {
+            width: 100%;
+            height: 100%;
+            max-height: 500px;
+        }
+
+        .fullscreen-chart-container .chart-svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Avatar upload */
+        .avatar-upload {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .avatar-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--pink-primary) 0%, var(--pink-secondary) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .avatar-preview:hover {
+            transform: scale(1.05);
+        }
+
+        .avatar-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .avatar-preview svg {
+            width: 40px;
+            height: 40px;
+            color: white;
+        }
+
+        body.theme-blue .avatar-preview {
+            background: linear-gradient(135deg, var(--blue-primary) 0%, var(--blue-secondary) 100%);
+        }
+
+        .avatar-upload-label {
+            font-size: 14px;
+            color: var(--text-light);
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .avatar-upload-label:hover {
+            color: var(--pink-primary);
+        }
+
+        body.theme-blue .avatar-upload-label:hover {
+            color: var(--blue-primary);
+        }
+
+        .avatar-input {
+            display: none;
+        }
+    </style>
+</head>
+<body class="theme-pink">
+    <div class="theme-toggle" onclick="toggleTheme()" title="切换主题">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+        </svg>
+    </div>
+
+    <div class="phone-frame">
+        <div class="app-container">
+            <!-- Home Page -->
+            <div class="page active" id="home-page">
+                <div class="header">
+                    <button class="back-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M15 18l-6-6 6-6"></path>
+                        </svg>
+                    </button>
+                    <h1 class="header-title">宝宝成长记</h1>
+                    <button class="camera-btn" onclick="goToSettingsPage()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="hero-section">
+                    <div class="hero-bg">
+                        <div class="cloud cloud-1"></div>
+                        <div class="cloud cloud-2"></div>
+                        <svg class="star star-1" viewBox="0 0 24 24" fill="#FFD54F">
+                            <polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9"/>
+                        </svg>
+                        <svg class="star star-2" viewBox="0 0 24 24" fill="#FFD54F">
+                            <polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9"/>
+                        </svg>
+                        <svg class="star star-3" viewBox="0 0 24 24" fill="#FFD54F">
+                            <polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9"/>
+                        </svg>
+                    </div>
+
+                    <div class="hero-content">
+                        <div class="avatar-container" style="cursor: pointer;" onclick="goToKidsPage()">
+                            <div class="avatar-ring">
+                                <img class="avatar-img" id="avatar-img" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23FFF0F5' width='100' height='100'/%3E%3Ccircle cx='50' cy='50' r='40' fill='%23FFE4E8'/%3E%3Ccircle cx='35' cy='45' r='5' fill='%232D3436'/%3E%3Ccircle cx='65' cy='45' r='5' fill='%232D3436'/%3E%3Cpath d='M40 60 Q50 70 60 60' stroke='%232D3436' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E" alt="头像">
+                            </div>
+                        </div>
+
+                        <div class="character-section">
+                            <div class="character-container">
+                                <div class="ground">
+                                    <div class="grass grass-1"></div>
+                                    <div class="grass grass-2"></div>
+                                    <div class="grass grass-3"></div>
+                                    <div class="grass grass-4"></div>
+                                </div>
+
+                                <div class="data-tags height-tag">
+                                    <div class="data-tag">
+                                        <div class="data-tag-icon"></div>
+                                        <span class="data-tag-label">身高：</span>
+                                        <span class="data-tag-value" id="current-height">105cm</span>
+                                    </div>
+                                </div>
+
+                                <div class="data-tags weight-tag">
+                                    <div class="data-tag">
+                                        <div class="data-tag-icon" style="background: #AED581;"></div>
+                                        <span class="data-tag-label">体重：</span>
+                                        <span class="data-tag-value" id="current-weight" style="color: #7CB342;">18kg</span>
+                                    </div>
+                                </div>
+
+                                <img class="character-illustration" id="character-img" src="图片/Q版女孩成长形象生成0-3.png" alt="角色形象">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-section">
+                    <div class="chart-card" style="cursor: pointer;" onclick="openFullscreen(currentChartType)">
+                        <!-- 书签标签 -->
+                        <div class="chart-tabs">
+                            <div class="chart-tab active" id="tab-height" onclick="event.stopPropagation(); switchChart('height')">
+                                <div class="chart-tab-dot" style="background: var(--pink-primary);"></div>
+                                <span>身高</span>
+                            </div>
+                            <div class="chart-tab" id="tab-weight" onclick="event.stopPropagation(); switchChart('weight')">
+                                <div class="chart-tab-dot" style="background: #AED581;"></div>
+                                <span>体重</span>
+                            </div>
+                        </div>
+                        
+                        <!-- 当前值显示 -->
+                        <div class="chart-header" style="padding-bottom: 0;">
+                            <div class="chart-subtitle" id="chart-current-value">
+                                <div class="chart-subtitle-dot" id="chart-current-dot" style="background: var(--pink-primary);"></div>
+                                <span id="chart-current-value-text">105cm</span>
+                            </div>
+                        </div>
+                        
+                        <!-- 图表容器 -->
+                        <div class="chart-container" id="chart-container">
+                            <div class="chart-grid" id="chart-grid">
+                                <div class="chart-grid-line"></div>
+                                <div class="chart-grid-line"></div>
+                                <div class="chart-grid-line"></div>
+                                <div class="chart-grid-line"></div>
+                                <span class="chart-y-label" id="y-label-1"></span>
+                                <span class="chart-y-label" id="y-label-2"></span>
+                                <span class="chart-y-label" id="y-label-3"></span>
+                                <span class="chart-y-label" id="y-label-4"></span>
+                                <span class="chart-y-label" id="y-label-5"></span>
+                                <span class="chart-y-label" id="y-label-6"></span>
+                            </div>
+                            <div class="chart-line-container">
+                                <svg class="chart-svg" viewBox="0 0 300 150" preserveAspectRatio="none" id="chart-svg">
+                                </svg>
+                            </div>
+                            <div class="chart-x-labels" id="chart-x-labels">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Record Page -->
+            <div class="page" id="record-page">
+                <div class="header">
+                    <button class="back-btn" onclick="goToPage('home')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M15 18l-6-6 6-6"></path>
+                        </svg>
+                    </button>
+                    <h1 class="header-title">记录成长</h1>
+                    <button class="camera-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                            <circle cx="12" cy="13" r="4"></circle>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="record-page">
+                    <h2 class="record-title">添加今日记录</h2>
+                    <div class="record-form">
+                        <div class="form-group">
+                            <label class="form-label">日期</label>
+                            <input type="date" class="form-input" id="record-date">
+                        </div>
+                        <div class="form-group">
+                            <div class="form-input-row">
+                                <div class="form-input-wrapper">
+                                    <label class="form-label">身高</label>
+                                    <input type="number" class="form-input" id="record-height" placeholder="105">
+                                    <span class="form-unit">cm</span>
+                                </div>
+                                <div class="form-input-wrapper">
+                                    <label class="form-label">体重</label>
+                                    <input type="number" class="form-input" id="record-weight" placeholder="18">
+                                    <span class="form-unit">kg</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">备注</label>
+                            <input type="text" class="form-input" id="record-note" placeholder="记录今天的成长...">
+                        </div>
+                        <button class="save-btn" onclick="saveRecord()">保存记录</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kids Management Page -->
+            <div class="page" id="kids-page">
+                <div class="header">
+                    <button class="back-btn" onclick="goToPage('home')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M15 18l-6-6 6-6"></path>
+                        </svg>
+                    </button>
+                    <h1 class="header-title">孩子管理</h1>
+                    <button class="camera-btn" onclick="showAddKidModal()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="kids-page">
+                    <div class="kids-list" id="kids-list">
+                    </div>
+                </div>
+            </div>
+
+            <!-- History Page -->
+            <div class="page" id="history-page">
+                <div class="header">
+                    <button class="back-btn" onclick="goToPage('home')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M15 18l-6-6 6-6"></path>
+                        </svg>
+                    </button>
+                    <h1 class="header-title">历史记录</h1>
+                    <button class="camera-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                            <circle cx="12" cy="13" r="4"></circle>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="history-page">
+                    <h2 class="history-title">成长曲线</h2>
+                    <div class="history-list" id="history-list">
+                        <div class="history-item">
+                            <div class="history-date">2026-05-20</div>
+                            <div class="history-data">
+                                <div class="history-data-item">
+                                    <div class="history-data-label">身高</div>
+                                    <div class="history-data-value">105cm</div>
+                                </div>
+                                <div class="history-data-item">
+                                    <div class="history-data-label">体重</div>
+                                    <div class="history-data-value" style="color: #7CB342;">18kg</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="history-item">
+                            <div class="history-date">2026-04-15</div>
+                            <div class="history-data">
+                                <div class="history-data-item">
+                                    <div class="history-data-label">身高</div>
+                                    <div class="history-data-value">103cm</div>
+                                </div>
+                                <div class="history-data-item">
+                                    <div class="history-data-label">体重</div>
+                                    <div class="history-data-value" style="color: #7CB342;">17.5kg</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="history-item">
+                            <div class="history-date">2026-03-10</div>
+                            <div class="history-data">
+                                <div class="history-data-item">
+                                    <div class="history-data-label">身高</div>
+                                    <div class="history-data-value">100cm</div>
+                                </div>
+                                <div class="history-data-item">
+                                    <div class="history-data-label">体重</div>
+                                    <div class="history-data-value" style="color: #7CB342;">17kg</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="history-item">
+                            <div class="history-date">2026-02-05</div>
+                            <div class="history-data">
+                                <div class="history-data-item">
+                                    <div class="history-data-label">身高</div>
+                                    <div class="history-data-value">98cm</div>
+                                </div>
+                                <div class="history-data-item">
+                                    <div class="history-data-label">体重</div>
+                                    <div class="history-data-value" style="color: #7CB342;">16.5kg</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="history-item">
+                            <div class="history-date">2026-01-01</div>
+                            <div class="history-data">
+                                <div class="history-data-item">
+                                    <div class="history-data-label">身高</div>
+                                    <div class="history-data-value">95cm</div>
+                                </div>
+                                <div class="history-data-item">
+                                    <div class="history-data-label">体重</div>
+                                    <div class="history-data-value" style="color: #7CB342;">16kg</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Page -->
+            <div class="page" id="settings-page">
+                <div class="header">
+                    <button class="back-btn" onclick="goToPage('home')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M15 18l-6-6 6-6"></path>
+                        </svg>
+                    </button>
+                    <h1 class="header-title">设置</h1>
+                    <button class="camera-btn"></button>
+                </div>
+
+                <div class="settings-page">
+                    <div class="settings-list">
+                        <div class="settings-item" onclick="backupData()">
+                            <div class="settings-item-left">
+                                <div class="settings-icon backup-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7"></path>
+                                        <polyline points="17 8 12 3 7 8"></polyline>
+                                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                                    </svg>
+                                </div>
+                                <span class="settings-label">备份数据</span>
+                            </div>
+                            <svg class="settings-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </div>
+
+                        <div class="settings-item" onclick="restoreData()">
+                            <div class="settings-item-left">
+                                <div class="settings-icon restore-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="1 4 1 10 7 10"></polyline>
+                                        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                                    </svg>
+                                </div>
+                                <span class="settings-label">还原数据</span>
+                            </div>
+                            <svg class="settings-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </div>
+
+                        <div class="settings-item" onclick="toggleTheme()">
+                            <div class="settings-item-left">
+                                <div class="settings-icon theme-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="5"></circle>
+                                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                                    </svg>
+                                </div>
+                                <span class="settings-label">切换主题</span>
+                            </div>
+                            <svg class="settings-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Navigation -->
+            <div class="bottom-nav">
+                <div class="nav-container">
+                    <button class="nav-btn active" id="nav-home" onclick="goToPage('home')">今日记录</button>
+                    <button class="add-btn" onclick="goToPage('record')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                    </button>
+                    <button class="nav-btn" id="nav-history" onclick="goToPage('history')">历史曲线</button>
+                </div>
+                <div class="home-indicator"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Kid Modal -->
+    <div class="modal-overlay" id="add-kid-modal">
+        <div class="modal">
+            <h2 class="modal-title">添加孩子</h2>
+            <div class="avatar-upload">
+                <div class="avatar-preview" id="add-avatar-preview" onclick="document.getElementById('add-avatar-input').click()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                </div>
+                <label class="avatar-upload-label" for="add-avatar-input">点击上传头像</label>
+                <input type="file" class="avatar-input" id="add-avatar-input" accept="image/*" onchange="handleAddAvatarUpload(event)">
+            </div>
+            <div class="form-group">
+                <label class="form-label">姓名</label>
+                <input type="text" class="form-input" id="kid-name" placeholder="请输入孩子姓名">
+            </div>
+            <div class="form-group">
+                <label class="form-label">性别</label>
+                <div class="gender-select">
+                    <div class="gender-option" id="gender-girl" onclick="selectGender('pink')">
+                        <div class="gender-icon">👧</div>
+                        <div class="gender-label">女孩</div>
+                    </div>
+                    <div class="gender-option" id="gender-boy" onclick="selectGender('blue')">
+                        <div class="gender-icon">👦</div>
+                        <div class="gender-label">男孩</div>
+                    </div>
+                </div>
+            </div>
+            <div class="form-input-row">
+                <div class="form-input-wrapper">
+                    <label class="form-label">出生日期</label>
+                    <input type="date" class="form-input" id="kid-birthday">
+                </div>
+            </div>
+            <button class="save-btn" onclick="addKid()" style="margin-top: 24px;">添加孩子</button>
+            <button class="save-btn" onclick="closeModal()" style="margin-top: 12px; background: #e0e0e0; color: var(--text-dark);">取消</button>
+        </div>
+    </div>
+
+    <!-- Edit Kid Modal -->
+    <div class="modal-overlay" id="edit-kid-modal">
+        <div class="modal">
+            <h2 class="modal-title">编辑孩子</h2>
+            <div class="avatar-upload">
+                <div class="avatar-preview" id="edit-avatar-preview" onclick="document.getElementById('edit-avatar-input').click()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                </div>
+                <label class="avatar-upload-label" for="edit-avatar-input">点击上传头像</label>
+                <input type="file" class="avatar-input" id="edit-avatar-input" accept="image/*" onchange="handleEditAvatarUpload(event)">
+            </div>
+            <div class="form-group">
+                <label class="form-label">姓名</label>
+                <input type="text" class="form-input" id="edit-kid-name" placeholder="请输入孩子姓名">
+            </div>
+            <div class="form-group">
+                <label class="form-label">性别</label>
+                <div class="gender-select">
+                    <div class="gender-option" id="edit-gender-girl" onclick="selectEditGender('pink')">
+                        <div class="gender-icon">👧</div>
+                        <div class="gender-label">女孩</div>
+                    </div>
+                    <div class="gender-option" id="edit-gender-boy" onclick="selectEditGender('blue')">
+                        <div class="gender-icon">👦</div>
+                        <div class="gender-label">男孩</div>
+                    </div>
+                </div>
+            </div>
+            <div class="form-input-row">
+                <div class="form-input-wrapper">
+                    <label class="form-label">出生日期</label>
+                    <input type="date" class="form-input" id="edit-kid-birthday">
+                </div>
+            </div>
+            <input type="hidden" id="edit-kid-id">
+            <button class="save-btn" onclick="saveEditKid()" style="margin-top: 24px;">保存修改</button>
+            <button class="save-btn" onclick="closeEditModal()" style="margin-top: 12px; background: #e0e0e0; color: var(--text-dark);">取消</button>
+        </div>
+    </div>
+
+    <!-- Fullscreen Chart Modal -->
+    <div class="fullscreen-overlay" id="fullscreen-overlay" onclick="closeFullscreen()">
+        <div class="fullscreen-content" onclick="event.stopPropagation()">
+            <button class="fullscreen-close" onclick="closeFullscreen()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 6L6 18M6 6L18 18"/>
+                </svg>
+            </button>
+            <div class="fullscreen-header" id="fullscreen-title">身高</div>
+            <div class="fullscreen-chart-container" id="fullscreen-chart-container">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTheme = 'pink';
+        let currentPage = 'home';
+        let selectedGender = 'pink';
+        let currentKidId = null;
+        let addAvatarData = '';
+        let editAvatarData = '';
+        let currentChartType = 'height';
+        
+        // 国标数据
+        const nationalStandards = {
+            girl: {
+                height: {
+                    1: { short: 69.7, low: 72.3, normal: 75, high: 77.7 },
+                    2: { short: 80.5, low: 83.8, normal: 87.2, high: 90.7 },
+                    3: { short: 88.2, low: 91.8, normal: 95.6, high: 99.4 },
+                    4: { short: 95.4, low: 99.2, normal: 103.1, high: 107 },
+                    5: { short: 101.8, low: 106, normal: 110.2, high: 114.5 },
+                    6: { short: 107.6, low: 112, normal: 116.6, high: 121.2 },
+                    7: { short: 112.7, low: 117.6, normal: 122.5, high: 127.6 },
+                    8: { short: 117.9, low: 123.1, normal: 128.5, high: 133.9 },
+                    9: { short: 122.6, low: 128.3, normal: 134.1, high: 139.9 },
+                    10: { short: 127.6, low: 133.8, normal: 140.1, high: 146.4 },
+                    11: { short: 133.4, low: 140, normal: 146.6, high: 153.3 },
+                    12: { short: 135.4, low: 143, normal: 148.9, high: 156.4 },
+                    13: { short: 139.5, low: 145.9, normal: 152.4, high: 158.8 },
+                    14: { short: 147.2, low: 152.9, normal: 158.6, high: 164.3 },
+                    15: { short: 148.8, low: 154.3, normal: 159.8, high: 165.3 },
+                    16: { short: 149.2, low: 154.7, normal: 160.1, high: 165.5 },
+                    17: { short: 149.5, low: 154.9, normal: 160.3, high: 165.7 },
+                    18: { short: 149.8, low: 155.2, normal: 160.6, high: 165.9 }
+                },
+                weight: {
+                    1: { thin: 8.45, normal: 9.4, heavy: 10.48, obese: 11.73 },
+                    2: { thin: 10.7, normal: 11.92, heavy: 13.31, obese: 14.92 },
+                    3: { thin: 12.65, normal: 14.13, heavy: 15.83, obese: 17.81 },
+                    4: { thin: 14.44, normal: 16.17, heavy: 18.19, obese: 20.54 },
+                    5: { thin: 16.2, normal: 18.26, heavy: 20.66, obese: 23.5 },
+                    6: { thin: 17.94, normal: 20.37, heavy: 23.27, obese: 26.74 },
+                    7: { thin: 19.74, normal: 22.64, heavy: 26.16, obese: 30.45 },
+                    8: { thin: 21.75, normal: 25.25, heavy: 29.56, obese: 34.94 },
+                    9: { thin: 23.96, normal: 28.19, heavy: 33.51, obese: 40.32 },
+                    10: { thin: 26.6, normal: 31.76, heavy: 38.41, obese: 47.15 },
+                    11: { thin: 29.99, normal: 36.1, heavy: 44.09, obese: 54.78 },
+                    12: { thin: 31.48, normal: 38.6, heavy: 46.7, obese: 58.59 },
+                    13: { thin: 34.04, normal: 40.77, heavy: 49.54, obese: 61.22 },
+                    14: { thin: 41.18, normal: 47.83, heavy: 56.61, obese: 66.77 },
+                    15: { thin: 43.42, normal: 49.82, heavy: 57.72, obese: 67.61 },
+                    16: { thin: 44.56, normal: 50.81, heavy: 58.45, obese: 67.93 },
+                    17: { thin: 45.01, normal: 51.2, heavy: 58.73, obese: 68.04 },
+                    18: { thin: 45.26, normal: 51.41, heavy: 58.88, obese: 68.1 }
+                }
+            },
+            boy: {
+                height: {
+                    1: { short: 71.2, low: 73.8, normal: 76.5, high: 79.3 },
+                    2: { short: 81.6, low: 85.1, normal: 88.5, high: 92.1 },
+                    3: { short: 89.3, low: 93, normal: 96.8, high: 100.7 },
+                    4: { short: 96.3, low: 100.2, normal: 104.1, high: 108.2 },
+                    5: { short: 102.8, low: 107, normal: 111.3, high: 115.7 },
+                    6: { short: 108.6, low: 113.1, normal: 117.7, high: 122.4 },
+                    7: { short: 114, low: 119, normal: 124, high: 129.1 },
+                    8: { short: 119.3, low: 124.6, normal: 130, high: 135.5 },
+                    9: { short: 123.9, low: 129.6, normal: 135.4, high: 141.2 },
+                    10: { short: 127.9, low: 134, normal: 140.2, high: 146.4 },
+                    11: { short: 132.1, low: 138.7, normal: 145.3, high: 152.1 },
+                    12: { short: 137.2, low: 144.6, normal: 151.9, high: 159.4 },
+                    13: { short: 144, low: 151.8, normal: 159.5, high: 167.3 },
+                    14: { short: 151.5, low: 158.7, normal: 165.9, high: 173.1 },
+                    15: { short: 156.7, low: 163.3, normal: 169.8, high: 176.3 },
+                    16: { short: 159.1, low: 165.4, normal: 171.6, high: 177.8 },
+                    17: { short: 160.1, low: 166.3, normal: 172.3, high: 178.4 },
+                    18: { short: 160.5, low: 166.6, normal: 172.7, high: 178.7 }
+                },
+                weight: {
+                    1: { thin: 9, normal: 10.05, heavy: 11.23, obese: 12.54 },
+                    2: { thin: 11.24, normal: 12.54, heavy: 14.01, obese: 15.37 },
+                    3: { thin: 13.13, normal: 14.65, heavy: 16.39, obese: 18.37 },
+                    4: { thin: 14.88, normal: 16.64, heavy: 18.67, obese: 21.01 },
+                    5: { thin: 16.87, normal: 18.98, heavy: 21.46, obese: 24.38 },
+                    6: { thin: 18.71, normal: 21.26, heavy: 24.32, obese: 28.03 },
+                    7: { thin: 20.83, normal: 24.06, heavy: 28.05, obese: 33.08 },
+                    8: { thin: 23.23, normal: 27.33, heavy: 32.57, obese: 39.41 },
+                    9: { thin: 25.5, normal: 30.46, heavy: 36.92, obese: 45.52 },
+                    10: { thin: 27.93, normal: 33.74, heavy: 41.33, obese: 51.38 },
+                    11: { thin: 30.95, normal: 37.69, heavy: 46.33, obese: 57.58 },
+                    12: { thin: 34.67, normal: 42.49, heavy: 52.31, obese: 64.68 },
+                    13: { thin: 39.22, normal: 48.08, heavy: 59.04, obese: 72.6 },
+                    14: { thin: 44.08, normal: 53.37, heavy: 64.84, obese: 79.07 },
+                    15: { thin: 48, normal: 57.08, heavy: 68.35, obese: 82.45 },
+                    16: { thin: 50.62, normal: 59.35, heavy: 70.2, obese: 83.85 },
+                    17: { thin: 52.2, normal: 60.68, heavy: 71.2, obese: 84.45 },
+                    18: { thin: 53.08, normal: 61.4, heavy: 71.73, obese: 84.72 }
+                }
+            }
+        };
+        let kids = [
+            {
+                id: 1,
+                name: '小宝宝',
+                gender: 'pink',
+                birthday: '2023-05-20',
+                height: 90,
+                weight: 13,
+                avatar: ''
+            }
+        ];
+        let records = {
+            1: [
+                { date: '2026-05-20', height: 95, weight: 14, note: '' },
+                { date: '2026-02-15', height: 92, weight: 13.5, note: '' },
+                { date: '2025-11-10', height: 88, weight: 12.8, note: '' },
+                { date: '2025-08-05', height: 85, weight: 12.2, note: '' },
+                { date: '2025-05-01', height: 82, weight: 11.8, note: '' }
+            ]
+        };
+
+        // 根据出生日期计算年龄组
+        function getAgeGroupFromBirthday(birthday) {
+            const birth = new Date(birthday);
+            const today = new Date();
+            let years = today.getFullYear() - birth.getFullYear();
+            let months = today.getMonth() - birth.getMonth();
+            
+            if (months < 0) {
+                years--;
+                months += 12;
+            }
+            
+            if (years <= 3) return '0-3';
+            if (years <= 6) return '4-6';
+            if (years <= 12) return '7-12';
+            return '13-18';
+        }
+
+        // 根据年龄和主题获取图片路径
+        function getCharacterImage(ageGroup, theme) {
+            const gender = theme === 'pink' ? '女孩' : '男孩';
+            return `图片/Q版${gender}成长形象生成${ageGroup}.png`;
+        }
+
+        // 更新角色形象
+        function updateCharacterImage() {
+            if (currentKidId) {
+                const kid = kids.find(k => k.id === currentKidId);
+                if (kid) {
+                    const ageGroup = getAgeGroupFromBirthday(kid.birthday);
+                    const characterImg = document.getElementById('character-img');
+                    characterImg.src = getCharacterImage(ageGroup, currentTheme);
+                }
+            }
+        }
+
+        // 孩子管理相关函数
+        function goToKidsPage() {
+            goToPage('kids');
+            renderKidsList();
+        }
+
+        function renderKidsList() {
+            const list = document.getElementById('kids-list');
+            list.innerHTML = kids.map(kid => {
+                const age = calculateAge(kid.birthday);
+                const isSelected = kid.id === currentKidId;
+                let avatarContent = '';
+                if (kid.avatar) {
+                    avatarContent = `<img src="${kid.avatar}" alt="${kid.name}的头像" style="width:100%;height:100%;object-fit:cover;">`;
+                } else {
+                    avatarContent = `
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    `;
+                }
+                return `
+                    <div class="kid-item ${isSelected ? 'selected' : ''}" onclick="selectKid(${kid.id})">
+                        <div class="kid-avatar">
+                            ${avatarContent}
+                        </div>
+                        <div class="kid-info">
+                            <div class="kid-name">${kid.name}</div>
+                            <div class="kid-details">
+                                <div class="kid-detail-item">
+                                    <div class="kid-detail-dot"></div>
+                                    <span>${age}</span>
+                                </div>
+                                <div class="kid-detail-item">
+                                    <div class="kid-detail-dot"></div>
+                                    <span>${kid.height > 0 ? kid.height + 'cm' : '—'}</span>
+                                </div>
+                                <div class="kid-detail-item">
+                                    <div class="kid-detail-dot"></div>
+                                    <span>${kid.weight > 0 ? kid.weight + 'kg' : '—'}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="kid-actions">
+                            <button class="kid-action-btn" onclick="event.stopPropagation(); showEditKidModal(${kid.id})">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                </svg>
+                            </button>
+                            <button class="kid-action-btn delete" onclick="event.stopPropagation(); deleteKid(${kid.id})">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function calculateAge(birthday) {
+            const birth = new Date(birthday);
+            const today = new Date();
+            let years = today.getFullYear() - birth.getFullYear();
+            let months = today.getMonth() - birth.getMonth();
+            let days = today.getDate() - birth.getDate();
+            
+            if (days < 0) {
+                months--;
+                const prevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+                days += prevMonth.getDate();
+            }
+            
+            if (months < 0) {
+                years--;
+                months += 12;
+            }
+            
+            if (years > 0) {
+                return `${years}岁${months}月`;
+            }
+            return `${months}月${days}天`;
+        }
+
+        function selectKid(kidId) {
+            currentKidId = kidId;
+            const kid = kids.find(k => k.id === kidId);
+            if (kid) {
+                // 切换主题为孩子的性别主题
+                currentTheme = kid.gender;
+                document.body.className = currentTheme === 'pink' ? 'theme-pink' : 'theme-blue';
+                updateAvatar();
+                updateCharacterImage();
+                updateChartColor();
+                updateHomePageData();
+                renderKidsList();
+            }
+        }
+
+        function handleAddAvatarUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                addAvatarData = e.target.result;
+                const preview = document.getElementById('add-avatar-preview');
+                preview.innerHTML = `<img src="${addAvatarData}" alt="头像预览">`;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleEditAvatarUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                editAvatarData = e.target.result;
+                const preview = document.getElementById('edit-avatar-preview');
+                preview.innerHTML = `<img src="${editAvatarData}" alt="头像预览">`;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function showAddKidModal() {
+            document.getElementById('add-kid-modal').classList.add('active');
+            document.getElementById('kid-name').value = '';
+            document.getElementById('kid-birthday').value = new Date().toISOString().split('T')[0];
+            document.getElementById('kid-height').value = '';
+            document.getElementById('kid-weight').value = '';
+            addAvatarData = '';
+            const preview = document.getElementById('add-avatar-preview');
+            preview.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+            `;
+            selectGender('pink');
+        }
+
+        function closeModal() {
+            document.getElementById('add-kid-modal').classList.remove('active');
+        }
+
+        function selectGender(gender) {
+            selectedGender = gender;
+            document.getElementById('gender-girl').classList.remove('selected');
+            document.getElementById('gender-boy').classList.remove('selected');
+            document.getElementById(gender === 'pink' ? 'gender-girl' : 'gender-boy').classList.add('selected');
+        }
+
+        function addKid() {
+            const name = document.getElementById('kid-name').value;
+            const birthday = document.getElementById('kid-birthday').value;
+            
+            if (!name) {
+                alert('请输入孩子姓名');
+                return;
+            }
+            
+            const newKidId = Date.now();
+            const newKid = {
+                id: newKidId,
+                name,
+                gender: selectedGender,
+                birthday,
+                height: 0,
+                weight: 0,
+                avatar: addAvatarData
+            };
+            
+            kids.push(newKid);
+            records[newKidId] = [];
+            
+            currentKidId = newKidId;
+            currentTheme = selectedGender;
+            document.body.className = currentTheme === 'pink' ? 'theme-pink' : 'theme-blue';
+            updateAvatar();
+            updateCharacterImage();
+            updateChartColor();
+            updateHomePageData();
+            
+            closeModal();
+            goToPage('home');
+        }
+
+        function deleteKid(kidId) {
+            if (kids.length <= 1) {
+                alert('至少需要保留一个孩子');
+                return;
+            }
+            
+            if (confirm('确定要删除这个孩子吗？')) {
+                kids = kids.filter(k => k.id !== kidId);
+                delete records[kidId];
+                
+                if (currentKidId === kidId) {
+                    selectKid(kids[0].id);
+                }
+                
+                renderKidsList();
+            }
+        }
+        
+        let editGender = 'pink';
+        let editKidIdRef = null;
+        
+        function showEditKidModal(kidId) {
+            const kid = kids.find(k => k.id === kidId);
+            if (!kid) return;
+            
+            editKidIdRef = kidId;
+            editAvatarData = kid.avatar;
+            
+            document.getElementById('edit-kid-id').value = kid.id;
+            document.getElementById('edit-kid-name').value = kid.name;
+            document.getElementById('edit-kid-birthday').value = kid.birthday;
+            editGender = kid.gender;
+            
+            const preview = document.getElementById('edit-avatar-preview');
+            if (kid.avatar) {
+                preview.innerHTML = `<img src="${kid.avatar}" alt="头像预览">`;
+            } else {
+                preview.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                `;
+            }
+            
+            selectEditGender(kid.gender);
+            document.getElementById('edit-kid-modal').classList.add('active');
+        }
+        
+        function closeEditModal() {
+            document.getElementById('edit-kid-modal').classList.remove('active');
+        }
+        
+        function selectEditGender(gender) {
+            editGender = gender;
+            document.getElementById('edit-gender-girl').classList.remove('selected');
+            document.getElementById('edit-gender-boy').classList.remove('selected');
+            document.getElementById(gender === 'pink' ? 'edit-gender-girl' : 'edit-gender-boy').classList.add('selected');
+        }
+        
+        function saveEditKid() {
+            const kidId = parseInt(document.getElementById('edit-kid-id').value);
+            const name = document.getElementById('edit-kid-name').value;
+            const birthday = document.getElementById('edit-kid-birthday').value;
+            
+            if (!name) {
+                alert('请输入孩子姓名');
+                return;
+            }
+            
+            const kidIndex = kids.findIndex(k => k.id === kidId);
+            if (kidIndex !== -1) {
+                kids[kidIndex].name = name;
+                kids[kidIndex].gender = editGender;
+                kids[kidIndex].birthday = birthday;
+                kids[kidIndex].avatar = editAvatarData;
+                
+                // 如果编辑的是当前选中的孩子，更新主题
+                if (currentKidId === kidId) {
+                    currentTheme = editGender;
+                    document.body.className = currentTheme === 'pink' ? 'theme-pink' : 'theme-blue';
+                    updateAvatar();
+                    updateCharacterImage();
+                    updateChartColor();
+                    updateHomePageData();
+                }
+                
+                renderKidsList();
+                closeEditModal();
+                alert('修改成功！');
+            }
+        }
+
+        function updateAvatar() {
+            const avatarImg = document.getElementById('avatar-img');
+            const avatarRing = avatarImg.parentElement;
+            
+            if (currentKidId) {
+                const kid = kids.find(k => k.id === currentKidId);
+                if (kid && kid.avatar) {
+                    avatarImg.src = kid.avatar;
+                    avatarRing.style.background = 'white';
+                    return;
+                }
+            }
+            
+            avatarRing.style.background = 'white';
+            if (currentTheme === 'blue') {
+                avatarImg.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23F0F8FF' width='100' height='100'/%3E%3Ccircle cx='50' cy='50' r='40' fill='%23E3F2FD'/%3E%3Ccircle cx='35' cy='45' r='5' fill='%232D3436'/%3E%3Ccircle cx='65' cy='45' r='5' fill='%232D3436'/%3E%3Cpath d='M40 60 Q50 68 60 60' stroke='%232D3436' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E";
+            } else {
+                avatarImg.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23FFF0F5' width='100' height='100'/%3E%3Ccircle cx='50' cy='50' r='40' fill='%23FFE4E8'/%3E%3Ccircle cx='35' cy='45' r='5' fill='%232D3436'/%3E%3Ccircle cx='65' cy='45' r='5' fill='%232D3436'/%3E%3Cpath d='M40 60 Q50 70 60 60' stroke='%232D3436' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E";
+            }
+        }
+
+        function toggleTheme() {
+            // 切换当前孩子的性别
+            if (currentKidId) {
+                const kid = kids.find(k => k.id === currentKidId);
+                if (kid) {
+                    kid.gender = kid.gender === 'pink' ? 'blue' : 'pink';
+                }
+            }
+            
+            currentTheme = currentTheme === 'pink' ? 'blue' : 'pink';
+            document.body.className = currentTheme === 'pink' ? 'theme-pink' : 'theme-blue';
+            
+            updateAvatar();
+            updateChartColor();
+            
+            // 同时更新角色形象的性别
+            if (currentKidId) {
+                updateCharacterImage();
+            }
+        }
+
+        function updateChartColor() {
+            const gradient = document.getElementById('gradient');
+            const stops = gradient.querySelectorAll('stop');
+            const color = currentTheme === 'pink' ? '#FF9A9E' : '#74B9FF';
+            stops[0].style.stopColor = color;
+            stops[1].style.stopColor = color;
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(page + '-page').classList.add('active');
+            
+            // 控制底部导航栏的显示
+            const bottomNav = document.querySelector('.bottom-nav');
+            if (page === 'kids' || page === 'settings') {
+                bottomNav.style.display = 'none';
+            } else {
+                bottomNav.style.display = 'block';
+            }
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            if (page === 'home') {
+                document.getElementById('nav-home').classList.add('active');
+            } else if (page === 'history') {
+                document.getElementById('nav-history').classList.add('active');
+            }
+            
+            if (page === 'history') {
+                updateHistoryList();
+            }
+        }
+
+        function updateHomePageData() {
+            if (currentKidId && records[currentKidId] && records[currentKidId].length > 0) {
+                const kidRecords = records[currentKidId];
+                const latestRecord = kidRecords[0];
+                document.getElementById('current-height').textContent = latestRecord.height + 'cm';
+                document.getElementById('current-weight').textContent = latestRecord.weight + 'kg';
+                
+                // 更新当前图表显示的值
+                updateCurrentChartValue(latestRecord);
+                
+                // 更新孩子的最新身高体重
+                const kid = kids.find(k => k.id === currentKidId);
+                if (kid) {
+                    kid.height = latestRecord.height;
+                    kid.weight = latestRecord.weight;
+                }
+                
+                // 更新图表
+                updateChart();
+                
+                // 根据实际年龄更新角色形象
+                updateCharacterImage();
+            } else {
+                // 没有记录时显示占位符
+                document.getElementById('current-height').textContent = '—';
+                document.getElementById('current-weight').textContent = '—';
+                updateCharacterImage();
+            }
+        }
+
+        // 更新当前图表显示的值
+        function updateCurrentChartValue(latestRecord) {
+            const valueText = document.getElementById('chart-current-value-text');
+            const dot = document.getElementById('chart-current-dot');
+            
+            if (currentChartType === 'height') {
+                valueText.textContent = latestRecord ? latestRecord.height + 'cm' : '—';
+                dot.style.background = 'var(--pink-primary)';
+            } else {
+                valueText.textContent = latestRecord ? latestRecord.weight + 'kg' : '—';
+                dot.style.background = '#AED581';
+            }
+        }
+
+        // 切换图表类型
+        function switchChart(type) {
+            currentChartType = type;
+            
+            // 更新标签激活状态
+            document.getElementById('tab-height').classList.toggle('active', type === 'height');
+            document.getElementById('tab-weight').classList.toggle('active', type === 'weight');
+            
+            // 更新体重标签的激活样式
+            if (type === 'weight') {
+                document.getElementById('tab-weight').style.background = 'linear-gradient(135deg, rgba(174, 213, 129, 0.2), rgba(124, 179, 66, 0.2))';
+                document.getElementById('tab-weight').style.border = '2px solid #AED581';
+            } else {
+                document.getElementById('tab-weight').style.background = '';
+                document.getElementById('tab-weight').style.border = '';
+            }
+            
+            // 更新图表
+            updateChart();
+            
+            // 更新当前值显示
+            if (currentKidId && records[currentKidId] && records[currentKidId].length > 0) {
+                updateCurrentChartValue(records[currentKidId][0]);
+            }
+        }
+
+        // 更新图表
+        function updateChart() {
+            if (currentKidId && records[currentKidId] && records[currentKidId].length > 0) {
+                const kidRecords = records[currentKidId].slice(0, 5).reverse();
+                renderChart(kidRecords, currentChartType);
+            }
+        }
+
+        // 计算年龄（月份）
+        function calculateAgeInMonths(birthDate, recordDate) {
+            const birth = new Date(birthDate);
+            const record = new Date(recordDate);
+            let months = (record.getFullYear() - birth.getFullYear()) * 12;
+            months += record.getMonth() - birth.getMonth();
+            if (record.getDate() < birth.getDate()) {
+                months--;
+            }
+            return Math.max(0, months);
+        }
+
+        // 格式化年龄显示
+        function formatAge(months) {
+            if (months < 12) {
+                return `${months}月`;
+            } else {
+                const years = Math.floor(months / 12);
+                const remainingMonths = months % 12;
+                if (remainingMonths === 0) {
+                    return `${years}岁`;
+                } else {
+                    return `${years}岁${remainingMonths}月`;
+                }
+            }
+        }
+
+        // 获取指定年龄和国标的值（插值计算）
+        function getStandardValue(gender, type, ageInYears, level) {
+            const standards = gender === 'blue' ? nationalStandards.boy : nationalStandards.girl;
+            const data = type === 'height' ? standards.height : standards.weight;
+            
+            // 找到相邻的年龄点
+            let lowerAge = Math.floor(ageInYears);
+            let upperAge = Math.ceil(ageInYears);
+            lowerAge = Math.max(1, lowerAge);
+            upperAge = Math.min(18, upperAge);
+            
+            if (lowerAge === upperAge) {
+                return data[lowerAge][level];
+            }
+            
+            // 插值计算
+            const lowerData = data[lowerAge];
+            const upperData = data[upperAge];
+            const t = (ageInYears - lowerAge) / (upperAge - lowerAge);
+            
+            return lowerData[level] + (upperData[level] - lowerData[level]) * t;
+        }
+
+        // 渲染图表
+        function renderChart(records, type) {
+            const svg = document.getElementById('chart-svg');
+            const container = svg.parentElement;
+            const containerWidth = container.clientWidth || 300;
+            const containerHeight = 150;
+            const padding = 20;
+            
+            // 获取当前孩子的出生日期和性别
+            const kid = kids.find(k => k.id === currentKidId);
+            if (!kid) return;
+            const gender = kid.gender;
+            
+            // 计算当前年龄
+            const currentAgeInMonths = calculateAgeInMonths(kid.birthday, new Date().toISOString().split('T')[0]);
+            const currentAge = currentAgeInMonths / 12;
+            
+            // 计算显示范围：当前年龄前后3岁，但在1-18岁范围内（以月为单位）
+            let displayMinAge = Math.max(12, currentAgeInMonths - 36); // 至少从1岁开始
+            let displayMaxAge = Math.min(216, currentAgeInMonths + 36); // 最多到18岁
+            
+            // 确保最小范围至少有3岁（36个月）
+            if (displayMaxAge - displayMinAge < 36) {
+                if (displayMinAge <= 12) {
+                    displayMaxAge = Math.min(216, displayMinAge + 36);
+                } else {
+                    displayMinAge = Math.max(12, displayMaxAge - 36);
+                }
+            }
+            
+            // 取整到完整年份
+            displayMinAge = Math.floor(displayMinAge / 12) * 12;
+            displayMaxAge = Math.ceil(displayMaxAge / 12) * 12;
+            displayMaxAge = Math.min(216, displayMaxAge);
+            
+            // 计算每条记录对应的年龄（月份）
+            const recordsWithAge = records.map(record => {
+                const ageInMonths = calculateAgeInMonths(kid.birthday, record.date);
+                return { ...record, ageInMonths };
+            });
+            
+            const ageRange = Math.max(displayMaxAge - displayMinAge, 1);
+            
+            // 计算国标数据的值范围
+            const standardLevels = type === 'height' 
+                ? ['short', 'low', 'normal', 'high']
+                : ['thin', 'normal', 'heavy', 'obese'];
+                
+            const allValues = [];
+            // 添加用户数据
+            recordsWithAge.forEach(r => allValues.push(type === 'height' ? r.height : r.weight));
+            // 添加国标数据
+            for (let ageMonths = displayMinAge; ageMonths <= displayMaxAge; ageMonths += 3) {
+                const ageYears = ageMonths / 12;
+                standardLevels.forEach(level => {
+                    allValues.push(getStandardValue(gender, type, ageYears, level));
+                });
+            }
+            
+            // 计算合理的Y轴范围
+            const minValue = Math.min(...allValues);
+            const maxValue = Math.max(...allValues);
+            
+            let yMin, yMax, interval;
+            if (type === 'height') {
+                // 身高：以5cm为间隔
+                yMin = Math.floor(minValue / 5) * 5 - 5;
+                yMax = Math.ceil(maxValue / 5) * 5 + 5;
+                interval = 5;
+                yMin = Math.max(40, yMin);
+                yMax = Math.min(200, yMax);
+            } else {
+                // 体重：以2kg为间隔
+                yMin = Math.floor(minValue / 2) * 2 - 2;
+                yMax = Math.ceil(maxValue / 2) * 2 + 2;
+                interval = 2;
+                yMin = Math.max(5, yMin);
+                yMax = Math.min(80, yMax);
+            }
+            
+            // 确保至少有一定范围
+            const minRange = type === 'height' ? 20 : 10;
+            if (yMax - yMin < minRange) {
+                yMax = yMin + minRange;
+            }
+            
+            const yRange = yMax - yMin;
+            
+            const chartData = type === 'height' 
+                ? { color: '#FF9A9E', varColor: 'var(--pink-primary)', min: yMin, max: yMax, range: yRange, unit: 'cm' }
+                : { color: '#AED581', varColor: '#AED581', min: yMin, max: yMax, range: yRange, unit: 'kg' };
+            
+            // 更新Y轴标签（按间隔显示）
+            const yLabels = [];
+            for (let val = yMax; val >= yMin; val -= interval) {
+                yLabels.push(val);
+            }
+            
+            // 如果标签过多，适当调整
+            const step = Math.ceil(yLabels.length / 6);
+            const displayLabels = [];
+            for (let i = 0; i < yLabels.length; i += step) {
+                displayLabels.push(yLabels[i]);
+            }
+            
+            // 确保至少有min和max
+            if (displayLabels[0] !== yMax) displayLabels.unshift(yMax);
+            if (displayLabels[displayLabels.length - 1] !== yMin) displayLabels.push(yMin);
+            
+            // 更新标签
+            const labelElements = [
+                document.getElementById('y-label-1'),
+                document.getElementById('y-label-2'),
+                document.getElementById('y-label-3'),
+                document.getElementById('y-label-4'),
+                document.getElementById('y-label-5'),
+                document.getElementById('y-label-6')
+            ];
+            
+            labelElements.forEach((el, idx) => {
+                if (idx < displayLabels.length) {
+                    el.textContent = displayLabels[idx];
+                    el.style.display = 'block';
+                } else {
+                    el.style.display = 'none';
+                }
+            });
+            
+            // 辅助函数：年龄转换为坐标
+            function ageToX(ageMonths) {
+                return padding + ((ageMonths - displayMinAge) / ageRange) * (containerWidth - padding * 2);
+            }
+            
+            function valueToY(value) {
+                return containerHeight - padding - ((value - chartData.min) / chartData.range) * (containerHeight - padding * 2);
+            }
+            
+            // 计算用户数据点坐标
+            const userPoints = recordsWithAge.map(record => {
+                const x = ageToX(record.ageInMonths);
+                const value = type === 'height' ? record.height : record.weight;
+                const y = valueToY(value);
+                return { x, y, value, date: record.date, ageInMonths: record.ageInMonths };
+            });
+
+            // 生成国标曲线点（每3个月一个点）
+            const standardPoints = [];
+            for (let ageMonths = displayMinAge; ageMonths <= displayMaxAge; ageMonths += 3) {
+                const ageYears = ageMonths / 12;
+                const x = ageToX(ageMonths);
+                const levelData = {};
+                standardLevels.forEach(level => {
+                    const value = getStandardValue(gender, type, ageYears, level);
+                    levelData[level] = {
+                        value,
+                        y: valueToY(value)
+                    };
+                });
+                standardPoints.push({ x, ageMonths, ageYears, ...levelData });
+            }
+
+            let svgContent = `<defs>`;
+            
+            // 国标区域渐变定义
+            if (type === 'height') {
+                svgContent += `
+                    <linearGradient id="standard-gradient-short" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:#E57373;stop-opacity:0.2"/>
+                        <stop offset="100%" style="stop-color:#E57373;stop-opacity:0.1"/>
+                    </linearGradient>
+                    <linearGradient id="standard-gradient-low" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:#FFB74D;stop-opacity:0.2"/>
+                        <stop offset="100%" style="stop-color:#FFB74D;stop-opacity:0.1"/>
+                    </linearGradient>
+                    <linearGradient id="standard-gradient-normal" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:#81C784;stop-opacity:0.2"/>
+                        <stop offset="100%" style="stop-color:#81C784;stop-opacity:0.1"/>
+                    </linearGradient>
+                    <linearGradient id="standard-gradient-high" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:#64B5F6;stop-opacity:0.2"/>
+                        <stop offset="100%" style="stop-color:#64B5F6;stop-opacity:0.1"/>
+                    </linearGradient>
+                `;
+            } else {
+                svgContent += `
+                    <linearGradient id="standard-gradient-thin" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:#E57373;stop-opacity:0.2"/>
+                        <stop offset="100%" style="stop-color:#E57373;stop-opacity:0.1"/>
+                    </linearGradient>
+                    <linearGradient id="standard-gradient-normal" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:#81C784;stop-opacity:0.2"/>
+                        <stop offset="100%" style="stop-color:#81C784;stop-opacity:0.1"/>
+                    </linearGradient>
+                    <linearGradient id="standard-gradient-heavy" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:#FFB74D;stop-opacity:0.2"/>
+                        <stop offset="100%" style="stop-color:#FFB74D;stop-opacity:0.1"/>
+                    </linearGradient>
+                    <linearGradient id="standard-gradient-obese" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:#EF5350;stop-opacity:0.2"/>
+                        <stop offset="100%" style="stop-color:#EF5350;stop-opacity:0.1"/>
+                    </linearGradient>
+                `;
+            }
+            
+            svgContent += `
+                    <linearGradient id="user-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:${chartData.color};stop-opacity:0.4"/>
+                        <stop offset="100%" style="stop-color:${chartData.color};stop-opacity:0"/>
+                    </linearGradient>
+                </defs>
+            `;
+            
+            // 绘制国标区域（从低到高）
+            if (standardPoints.length > 1) {
+                if (type === 'height') {
+                    // 矮小区域
+                    let areaPath = `M ${standardPoints[0].x} ${containerHeight}`;
+                    standardPoints.forEach(p => areaPath += ` L ${p.x} ${p.short.y}`);
+                    areaPath += ` L ${standardPoints[standardPoints.length - 1].x} ${containerHeight} Z`;
+                    svgContent += `<path style="fill: url(#standard-gradient-short);" d="${areaPath}"/>`;
+                    
+                    // 偏矮区域
+                    areaPath = `M ${standardPoints[0].x} ${standardPoints[0].short.y}`;
+                    standardPoints.forEach(p => areaPath += ` L ${p.x} ${p.low.y}`);
+                    standardPoints.slice().reverse().forEach(p => areaPath += ` L ${p.x} ${p.short.y}`);
+                    areaPath += ` Z`;
+                    svgContent += `<path style="fill: url(#standard-gradient-low);" d="${areaPath}"/>`;
+                    
+                    // 标准区域
+                    areaPath = `M ${standardPoints[0].x} ${standardPoints[0].low.y}`;
+                    standardPoints.forEach(p => areaPath += ` L ${p.x} ${p.normal.y}`);
+                    standardPoints.slice().reverse().forEach(p => areaPath += ` L ${p.x} ${p.low.y}`);
+                    areaPath += ` Z`;
+                    svgContent += `<path style="fill: url(#standard-gradient-normal);" d="${areaPath}"/>`;
+                    
+                    // 超高区域
+                    areaPath = `M ${standardPoints[0].x} ${standardPoints[0].normal.y}`;
+                    standardPoints.forEach(p => areaPath += ` L ${p.x} ${p.high.y}`);
+                    standardPoints.slice().reverse().forEach(p => areaPath += ` L ${p.x} ${p.normal.y}`);
+                    areaPath += ` Z`;
+                    svgContent += `<path style="fill: url(#standard-gradient-high);" d="${areaPath}"/>`;
+                    
+                    // 国标线条
+                    svgContent += `<path class="chart-line" style="stroke: #E57373; stroke-width: 1; stroke-dasharray: 4, 2;" d="${generateLinePath(standardPoints, 'short')}"/>`;
+                    svgContent += `<path class="chart-line" style="stroke: #FFB74D; stroke-width: 1; stroke-dasharray: 4, 2;" d="${generateLinePath(standardPoints, 'low')}"/>`;
+                    svgContent += `<path class="chart-line" style="stroke: #81C784; stroke-width: 2;" d="${generateLinePath(standardPoints, 'normal')}"/>`;
+                    svgContent += `<path class="chart-line" style="stroke: #64B5F6; stroke-width: 1; stroke-dasharray: 4, 2;" d="${generateLinePath(standardPoints, 'high')}"/>`;
+                } else {
+                    // 偏瘦区域
+                    let areaPath = `M ${standardPoints[0].x} ${containerHeight}`;
+                    standardPoints.forEach(p => areaPath += ` L ${p.x} ${p.thin.y}`);
+                    areaPath += ` L ${standardPoints[standardPoints.length - 1].x} ${containerHeight} Z`;
+                    svgContent += `<path style="fill: url(#standard-gradient-thin);" d="${areaPath}"/>`;
+                    
+                    // 标准区域
+                    areaPath = `M ${standardPoints[0].x} ${standardPoints[0].thin.y}`;
+                    standardPoints.forEach(p => areaPath += ` L ${p.x} ${p.normal.y}`);
+                    standardPoints.slice().reverse().forEach(p => areaPath += ` L ${p.x} ${p.thin.y}`);
+                    areaPath += ` Z`;
+                    svgContent += `<path style="fill: url(#standard-gradient-normal);" d="${areaPath}"/>`;
+                    
+                    // 超重区域
+                    areaPath = `M ${standardPoints[0].x} ${standardPoints[0].normal.y}`;
+                    standardPoints.forEach(p => areaPath += ` L ${p.x} ${p.heavy.y}`);
+                    standardPoints.slice().reverse().forEach(p => areaPath += ` L ${p.x} ${p.normal.y}`);
+                    areaPath += ` Z`;
+                    svgContent += `<path style="fill: url(#standard-gradient-heavy);" d="${areaPath}"/>`;
+                    
+                    // 肥胖区域
+                    areaPath = `M ${standardPoints[0].x} ${standardPoints[0].heavy.y}`;
+                    standardPoints.forEach(p => areaPath += ` L ${p.x} ${p.obese.y}`);
+                    standardPoints.slice().reverse().forEach(p => areaPath += ` L ${p.x} ${p.heavy.y}`);
+                    areaPath += ` Z`;
+                    svgContent += `<path style="fill: url(#standard-gradient-obese);" d="${areaPath}"/>`;
+                    
+                    // 国标线条
+                    svgContent += `<path class="chart-line" style="stroke: #E57373; stroke-width: 1; stroke-dasharray: 4, 2;" d="${generateLinePath(standardPoints, 'thin')}"/>`;
+                    svgContent += `<path class="chart-line" style="stroke: #81C784; stroke-width: 2;" d="${generateLinePath(standardPoints, 'normal')}"/>`;
+                    svgContent += `<path class="chart-line" style="stroke: #FFB74D; stroke-width: 1; stroke-dasharray: 4, 2;" d="${generateLinePath(standardPoints, 'heavy')}"/>`;
+                    svgContent += `<path class="chart-line" style="stroke: #EF5350; stroke-width: 1; stroke-dasharray: 4, 2;" d="${generateLinePath(standardPoints, 'obese')}"/>`;
+                }
+            }
+
+            // 绘制用户曲线
+            if (userPoints.length > 0) {
+                // 生成路径
+                let pathD = `M ${userPoints[0].x} ${userPoints[0].y}`;
+                for (let i = 1; i < userPoints.length; i++) {
+                    const prev = userPoints[i - 1];
+                    const curr = userPoints[i];
+                    const cpX = (prev.x + curr.x) / 2;
+                    pathD += ` Q ${cpX} ${prev.y}, ${cpX} ${(prev.y + curr.y) / 2}`;
+                    pathD += ` Q ${cpX} ${curr.y}, ${curr.x} ${curr.y}`;
+                }
+
+                // 生成填充区域
+                let areaD = pathD + ` L ${userPoints[userPoints.length - 1].x} ${containerHeight}`;
+                areaD += ` L ${userPoints[0].x} ${containerHeight} Z`;
+
+                svgContent += `<path class="chart-area" style="fill: url(#user-gradient);" d="${areaD}"/>`;
+                svgContent += `<path class="chart-line" style="stroke: ${chartData.varColor}; stroke-width: 3;" d="${pathD}"/>`;
+
+                // 添加数据点
+                userPoints.forEach((point, index) => {
+                    const isLatest = index === userPoints.length - 1;
+                    const r = isLatest ? 10 : 6;
+                    svgContent += `<circle class="${isLatest ? 'chart-point-highlight' : 'chart-point'}" cx="${point.x}" cy="${point.y}" r="${r}" style="fill: ${isLatest ? '#FFD54F' : chartData.varColor}; stroke: white; stroke-width: 2;"/>`;
+                });
+            }
+
+            svg.innerHTML = svgContent;
+
+            // 更新X轴标签（按1岁间隔显示）
+            const xLabelsContainer = document.getElementById('chart-x-labels');
+            
+            let xLabelsHTML = '';
+            // 按1岁间隔生成标签
+            for (let ageMonths = displayMinAge; ageMonths <= displayMaxAge; ageMonths += 12) {
+                const x = ageToX(ageMonths);
+                const ageYears = Math.floor(ageMonths / 12);
+                xLabelsHTML += `<span class="chart-x-label" style="position: absolute; left: ${x - 20}px; width: 40px; text-align: center;">${ageYears}岁</span>`;
+            }
+            
+            xLabelsContainer.innerHTML = xLabelsHTML;
+        }
+
+        // 生成国标曲线路径
+        function generateLinePath(points, level) {
+            let pathD = `M ${points[0].x} ${points[0][level].y}`;
+            for (let i = 1; i < points.length; i++) {
+                const prev = points[i - 1];
+                const curr = points[i];
+                const cpX = (prev.x + curr.x) / 2;
+                pathD += ` Q ${cpX} ${prev[level].y}, ${cpX} ${(prev[level].y + curr[level].y) / 2}`;
+                pathD += ` Q ${cpX} ${curr[level].y}, ${curr.x} ${curr[level].y}`;
+            }
+            return pathD;
+        }
+
+        // 全屏显示图表
+        function openFullscreen(type) {
+            const overlay = document.getElementById('fullscreen-overlay');
+            const title = document.getElementById('fullscreen-title');
+            const container = document.getElementById('fullscreen-chart-container');
+            
+            title.textContent = type === 'height' ? '身高' : '体重';
+            
+            // 生成全屏图表内容
+            const chartData = type === 'height' 
+                ? { color: '#FF9A9E', label: '身高', unit: 'cm', max: 150, id: 'fullscreen-height' }
+                : { color: '#AED581', label: '体重', unit: 'kg', max: 50, id: 'fullscreen-weight' };
+            
+            // 先渲染全屏图表
+            container.innerHTML = `
+                <div class="chart-container" style="height: 100%; padding-top: 20px;">
+                    <div class="chart-grid" id="${chartData.id}-grid">
+                        <div class="chart-grid-line"></div>
+                        <div class="chart-grid-line"></div>
+                        <div class="chart-grid-line"></div>
+                        <div class="chart-grid-line"></div>
+                        <span class="chart-y-label" id="${chartData.id}-y1"></span>
+                        <span class="chart-y-label" id="${chartData.id}-y2"></span>
+                        <span class="chart-y-label" id="${chartData.id}-y3"></span>
+                        <span class="chart-y-label" id="${chartData.id}-y4"></span>
+                    </div>
+                    <div class="chart-line-container">
+                        <svg class="chart-svg" viewBox="0 0 600 300" preserveAspectRatio="none" id="${chartData.id}-svg" style="width:100%;height:100%;">
+                        </svg>
+                    </div>
+                    <div class="chart-x-labels" id="${chartData.id}-x-labels"></div>
+                </div>
+            `;
+            
+            overlay.classList.add('active');
+            
+            // 更新全屏图表数据
+            updateFullscreenChart(type, chartData);
+        }
+
+        // 更新全屏图表
+        function updateFullscreenChart(type, chartData) {
+            if (currentKidId && records[currentKidId] && records[currentKidId].length > 0) {
+                const kidRecords = records[currentKidId].slice(0, 10).reverse();
+                const svg = document.getElementById(`${chartData.id}-svg`);
+                const containerWidth = 600;
+                const containerHeight = 300;
+                const padding = 40;
+                
+                // 获取当前孩子的出生日期和性别
+                const kid = kids.find(k => k.id === currentKidId);
+                if (!kid) return;
+                const gender = kid.gender;
+                
+                // 计算当前年龄
+                const currentAgeInMonths = calculateAgeInMonths(kid.birthday, new Date().toISOString().split('T')[0]);
+                const currentAge = currentAgeInMonths / 12;
+                
+                // 计算显示范围：当前年龄前后3岁，但在1-18岁范围内（以月为单位）
+                let displayMinAge = Math.max(12, currentAgeInMonths - 36); // 至少从1岁开始
+                let displayMaxAge = Math.min(216, currentAgeInMonths + 36); // 最多到18岁
+                
+                // 确保最小范围至少有3岁（36个月）
+                if (displayMaxAge - displayMinAge < 36) {
+                    if (displayMinAge <= 12) {
+                        displayMaxAge = Math.min(216, displayMinAge + 36);
+                    } else {
+                        displayMinAge = Math.max(12, displayMaxAge - 36);
+                    }
+                }
+                
+                // 取整到完整年份
+                displayMinAge = Math.floor(displayMinAge / 12) * 12;
+                displayMaxAge = Math.ceil(displayMaxAge / 12) * 12;
+                displayMaxAge = Math.min(216, displayMaxAge);
+                
+                // 计算每条记录对应的年龄（月份）
+                const recordsWithAge = kidRecords.map(record => {
+                    const ageInMonths = calculateAgeInMonths(kid.birthday, record.date);
+                    return { ...record, ageInMonths };
+                });
+                
+                const ageRange = Math.max(displayMaxAge - displayMinAge, 1);
+                
+                // 计算国标数据的值范围
+                const standardLevels = type === 'height' 
+                    ? ['short', 'low', 'normal', 'high']
+                    : ['thin', 'normal', 'heavy', 'obese'];
+                    
+                const allValues = [];
+                // 添加用户数据
+                recordsWithAge.forEach(r => allValues.push(type === 'height' ? r.height : r.weight));
+                // 添加国标数据
+                for (let ageMonths = displayMinAge; ageMonths <= displayMaxAge; ageMonths += 3) {
+                    const ageYears = ageMonths / 12;
+                    standardLevels.forEach(level => {
+                        allValues.push(getStandardValue(gender, type, ageYears, level));
+                    });
+                }
+                
+                // 计算合理的Y轴范围
+                const minValue = Math.min(...allValues);
+                const maxValue = Math.max(...allValues);
+                
+                let yMin, yMax, interval;
+                if (type === 'height') {
+                    // 身高：以5cm为间隔
+                    yMin = Math.floor(minValue / 5) * 5 - 5;
+                    yMax = Math.ceil(maxValue / 5) * 5 + 5;
+                    interval = 5;
+                    yMin = Math.max(40, yMin);
+                    yMax = Math.min(200, yMax);
+                } else {
+                    // 体重：以2kg为间隔
+                    yMin = Math.floor(minValue / 2) * 2 - 2;
+                    yMax = Math.ceil(maxValue / 2) * 2 + 2;
+                    interval = 2;
+                    yMin = Math.max(5, yMin);
+                    yMax = Math.min(80, yMax);
+                }
+                
+                // 确保至少有一定范围
+                const minRange = type === 'height' ? 20 : 10;
+                if (yMax - yMin < minRange) {
+                    yMax = yMin + minRange;
+                }
+                
+                const yRange = yMax - yMin;
+                
+                // 更新chartData
+                chartData = {
+                    ...chartData,
+                    min: yMin,
+                    max: yMax,
+                    range: yRange
+                };
+                
+                // 更新Y轴标签（按间隔显示）
+                const yLabels = [];
+                for (let val = yMax; val >= yMin; val -= interval) {
+                    yLabels.push(val);
+                }
+                
+                // 如果标签过多，适当调整
+                const step = Math.ceil(yLabels.length / 4);
+                const displayLabels = [];
+                for (let i = 0; i < yLabels.length; i += step) {
+                    displayLabels.push(yLabels[i]);
+                }
+                
+                // 确保至少有min和max
+                if (displayLabels[0] !== yMax) displayLabels.unshift(yMax);
+                if (displayLabels[displayLabels.length - 1] !== yMin) displayLabels.push(yMin);
+                
+                // 更新标签
+                document.getElementById(`${chartData.id}-y1`).textContent = displayLabels[0] || '';
+                document.getElementById(`${chartData.id}-y2`).textContent = displayLabels[1] || '';
+                document.getElementById(`${chartData.id}-y3`).textContent = displayLabels[2] || '';
+                document.getElementById(`${chartData.id}-y4`).textContent = displayLabels[3] || '';
+                
+                // 辅助函数：年龄转换为坐标
+                function ageToX(ageMonths) {
+                    return padding + ((ageMonths - displayMinAge) / ageRange) * (containerWidth - padding * 2);
+                }
+                
+                function valueToY(value) {
+                    return containerHeight - padding - ((value - chartData.min) / chartData.range) * (containerHeight - padding * 2);
+                }
+                
+                // 计算用户数据点坐标
+                const userPoints = recordsWithAge.map(record => {
+                    const x = ageToX(record.ageInMonths);
+                    const value = type === 'height' ? record.height : record.weight;
+                    const y = valueToY(value);
+                    return { x, y, value, date: record.date, ageInMonths: record.ageInMonths };
+                });
+
+                // 生成国标曲线点（每3个月一个点）
+                const standardPoints = [];
+                for (let ageMonths = displayMinAge; ageMonths <= displayMaxAge; ageMonths += 3) {
+                    const ageYears = ageMonths / 12;
+                    const x = ageToX(ageMonths);
+                    const levelData = {};
+                    standardLevels.forEach(level => {
+                        const value = getStandardValue(gender, type, ageYears, level);
+                        levelData[level] = {
+                            value,
+                            y: valueToY(value)
+                        };
+                    });
+                    standardPoints.push({ x, ageMonths, ageYears, ...levelData });
+                }
+
+                let svgContent = `<defs>`;
+                
+                // 国标区域渐变定义
+                if (type === 'height') {
+                    svgContent += `
+                        <linearGradient id="standard-gradient-short" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#E57373;stop-opacity:0.2"/>
+                            <stop offset="100%" style="stop-color:#E57373;stop-opacity:0.1"/>
+                        </linearGradient>
+                        <linearGradient id="standard-gradient-low" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#FFB74D;stop-opacity:0.2"/>
+                            <stop offset="100%" style="stop-color:#FFB74D;stop-opacity:0.1"/>
+                        </linearGradient>
+                        <linearGradient id="standard-gradient-normal" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#81C784;stop-opacity:0.2"/>
+                            <stop offset="100%" style="stop-color:#81C784;stop-opacity:0.1"/>
+                        </linearGradient>
+                        <linearGradient id="standard-gradient-high" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#64B5F6;stop-opacity:0.2"/>
+                            <stop offset="100%" style="stop-color:#64B5F6;stop-opacity:0.1"/>
+                        </linearGradient>
+                    `;
+                } else {
+                    svgContent += `
+                        <linearGradient id="standard-gradient-thin" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#E57373;stop-opacity:0.2"/>
+                            <stop offset="100%" style="stop-color:#E57373;stop-opacity:0.1"/>
+                        </linearGradient>
+                        <linearGradient id="standard-gradient-normal" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#81C784;stop-opacity:0.2"/>
+                            <stop offset="100%" style="stop-color:#81C784;stop-opacity:0.1"/>
+                        </linearGradient>
+                        <linearGradient id="standard-gradient-heavy" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#FFB74D;stop-opacity:0.2"/>
+                            <stop offset="100%" style="stop-color:#FFB74D;stop-opacity:0.1"/>
+                        </linearGradient>
+                        <linearGradient id="standard-gradient-obese" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#EF5350;stop-opacity:0.2"/>
+                            <stop offset="100%" style="stop-color:#EF5350;stop-opacity:0.1"/>
+                        </linearGradient>
+                    `;
+                }
+                
+                svgContent += `
+                        <linearGradient id="fullscreen-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:${chartData.color};stop-opacity:0.4"/>
+                            <stop offset="100%" style="stop-color:${chartData.color};stop-opacity:0"/>
+                        </linearGradient>
+                    </defs>
+                `;
+                
+                // 绘制国标区域（从低到高）
+                if (standardPoints.length > 1) {
+                    if (type === 'height') {
+                        // 矮小区域
+                        let areaPath = `M ${standardPoints[0].x} ${containerHeight}`;
+                        standardPoints.forEach(p => areaPath += ` L ${p.x} ${p.short.y}`);
+                        areaPath += ` L ${standardPoints[standardPoints.length - 1].x} ${containerHeight} Z`;
+                        svgContent += `<path style="fill: url(#standard-gradient-short);" d="${areaPath}"/>`;
+                        
+                        // 偏矮区域
+                        areaPath = `M ${standardPoints[0].x} ${standardPoints[0].short.y}`;
+                        standardPoints.forEach(p => areaPath += ` L ${p.x} ${p.low.y}`);
+                        standardPoints.slice().reverse().forEach(p => areaPath += ` L ${p.x} ${p.short.y}`);
+                        areaPath += ` Z`;
+                        svgContent += `<path style="fill: url(#standard-gradient-low);" d="${areaPath}"/>`;
+                        
+                        // 标准区域
+                        areaPath = `M ${standardPoints[0].x} ${standardPoints[0].low.y}`;
+                        standardPoints.forEach(p => areaPath += ` L ${p.x} ${p.normal.y}`);
+                        standardPoints.slice().reverse().forEach(p => areaPath += ` L ${p.x} ${p.low.y}`);
+                        areaPath += ` Z`;
+                        svgContent += `<path style="fill: url(#standard-gradient-normal);" d="${areaPath}"/>`;
+                        
+                        // 超高区域
+                        areaPath = `M ${standardPoints[0].x} ${standardPoints[0].normal.y}`;
+                        standardPoints.forEach(p => areaPath += ` L ${p.x} ${p.high.y}`);
+                        standardPoints.slice().reverse().forEach(p => areaPath += ` L ${p.x} ${p.normal.y}`);
+                        areaPath += ` Z`;
+                        svgContent += `<path style="fill: url(#standard-gradient-high);" d="${areaPath}"/>`;
+                        
+                        // 国标线条
+                        svgContent += `<path class="chart-line" style="stroke: #E57373; stroke-width: 1.5; stroke-dasharray: 5, 3;" d="${generateLinePath(standardPoints, 'short')}"/>`;
+                        svgContent += `<path class="chart-line" style="stroke: #FFB74D; stroke-width: 1.5; stroke-dasharray: 5, 3;" d="${generateLinePath(standardPoints, 'low')}"/>`;
+                        svgContent += `<path class="chart-line" style="stroke: #81C784; stroke-width: 2.5;" d="${generateLinePath(standardPoints, 'normal')}"/>`;
+                        svgContent += `<path class="chart-line" style="stroke: #64B5F6; stroke-width: 1.5; stroke-dasharray: 5, 3;" d="${generateLinePath(standardPoints, 'high')}"/>`;
+                    } else {
+                        // 偏瘦区域
+                        let areaPath = `M ${standardPoints[0].x} ${containerHeight}`;
+                        standardPoints.forEach(p => areaPath += ` L ${p.x} ${p.thin.y}`);
+                        areaPath += ` L ${standardPoints[standardPoints.length - 1].x} ${containerHeight} Z`;
+                        svgContent += `<path style="fill: url(#standard-gradient-thin);" d="${areaPath}"/>`;
+                        
+                        // 标准区域
+                        areaPath = `M ${standardPoints[0].x} ${standardPoints[0].thin.y}`;
+                        standardPoints.forEach(p => areaPath += ` L ${p.x} ${p.normal.y}`);
+                        standardPoints.slice().reverse().forEach(p => areaPath += ` L ${p.x} ${p.thin.y}`);
+                        areaPath += ` Z`;
+                        svgContent += `<path style="fill: url(#standard-gradient-normal);" d="${areaPath}"/>`;
+                        
+                        // 超重区域
+                        areaPath = `M ${standardPoints[0].x} ${standardPoints[0].normal.y}`;
+                        standardPoints.forEach(p => areaPath += ` L ${p.x} ${p.heavy.y}`);
+                        standardPoints.slice().reverse().forEach(p => areaPath += ` L ${p.x} ${p.normal.y}`);
+                        areaPath += ` Z`;
+                        svgContent += `<path style="fill: url(#standard-gradient-heavy);" d="${areaPath}"/>`;
+                        
+                        // 肥胖区域
+                        areaPath = `M ${standardPoints[0].x} ${standardPoints[0].heavy.y}`;
+                        standardPoints.forEach(p => areaPath += ` L ${p.x} ${p.obese.y}`);
+                        standardPoints.slice().reverse().forEach(p => areaPath += ` L ${p.x} ${p.heavy.y}`);
+                        areaPath += ` Z`;
+                        svgContent += `<path style="fill: url(#standard-gradient-obese);" d="${areaPath}"/>`;
+                        
+                        // 国标线条
+                        svgContent += `<path class="chart-line" style="stroke: #E57373; stroke-width: 1.5; stroke-dasharray: 5, 3;" d="${generateLinePath(standardPoints, 'thin')}"/>`;
+                        svgContent += `<path class="chart-line" style="stroke: #81C784; stroke-width: 2.5;" d="${generateLinePath(standardPoints, 'normal')}"/>`;
+                        svgContent += `<path class="chart-line" style="stroke: #FFB74D; stroke-width: 1.5; stroke-dasharray: 5, 3;" d="${generateLinePath(standardPoints, 'heavy')}"/>`;
+                        svgContent += `<path class="chart-line" style="stroke: #EF5350; stroke-width: 1.5; stroke-dasharray: 5, 3;" d="${generateLinePath(standardPoints, 'obese')}"/>`;
+                    }
+                }
+
+                // 绘制用户曲线
+                if (userPoints.length > 0) {
+                    // 生成路径
+                    let pathD = `M ${userPoints[0].x} ${userPoints[0].y}`;
+                    for (let i = 1; i < userPoints.length; i++) {
+                        const prev = userPoints[i - 1];
+                        const curr = userPoints[i];
+                        const cpX = (prev.x + curr.x) / 2;
+                        pathD += ` Q ${cpX} ${prev.y}, ${cpX} ${(prev.y + curr.y) / 2}`;
+                        pathD += ` Q ${cpX} ${curr.y}, ${curr.x} ${curr.y}`;
+                    }
+
+                    // 生成填充区域
+                    let areaD = pathD + ` L ${userPoints[userPoints.length - 1].x} ${containerHeight}`;
+                    areaD += ` L ${userPoints[0].x} ${containerHeight} Z`;
+
+                    svgContent += `<path class="chart-area" style="fill: url(#fullscreen-gradient);" d="${areaD}"/>`;
+                    svgContent += `<path class="chart-line" style="stroke: ${chartData.color}; stroke-width: 3.5;" d="${pathD}"/>`;
+
+                    // 添加数据点
+                    userPoints.forEach((point, index) => {
+                        const isLatest = index === userPoints.length - 1;
+                        const r = isLatest ? 14 : 8;
+                        svgContent += `<circle class="${isLatest ? 'chart-point-highlight' : 'chart-point'}" cx="${point.x}" cy="${point.y}" r="${r}" style="fill: ${isLatest ? '#FFD54F' : chartData.color}; stroke: white; stroke-width: 2.5;"/>`;
+                    });
+                }
+
+                svg.innerHTML = svgContent;
+
+                // 更新X轴标签（按1岁间隔显示）
+                const xLabelsContainer = document.getElementById(`${chartData.id}-x-labels`);
+                
+                let labelsHTML = '';
+                // 按1岁间隔生成标签
+                for (let ageMonths = displayMinAge; ageMonths <= displayMaxAge; ageMonths += 12) {
+                    const x = ageToX(ageMonths);
+                    const ageYears = Math.floor(ageMonths / 12);
+                    labelsHTML += `<span class="chart-x-label" style="position: absolute; left: ${x - 30}px; width: 60px; text-align: center; font-size: 12px;">${ageYears}岁</span>`;
+                }
+                
+                xLabelsContainer.innerHTML = labelsHTML;
+            }
+        }
+
+        // 关闭全屏
+        function closeFullscreen() {
+            document.getElementById('fullscreen-overlay').classList.remove('active');
+        }
+
+        function saveRecord() {
+            const date = document.getElementById('record-date').value || new Date().toISOString().split('T')[0];
+            const height = parseFloat(document.getElementById('record-height').value) || 0;
+            const weight = parseFloat(document.getElementById('record-weight').value) || 0;
+            const note = document.getElementById('record-note').value || '';
+            
+            if (height && weight && currentKidId) {
+                if (!records[currentKidId]) {
+                    records[currentKidId] = [];
+                }
+                records[currentKidId].unshift({ date, height, weight, note });
+                updateHistoryList();
+                updateHomePageData();
+                alert('记录保存成功！');
+                goToPage('home');
+                document.getElementById('record-height').value = '';
+                document.getElementById('record-weight').value = '';
+                document.getElementById('record-note').value = '';
+            } else {
+                alert('请填写身高和体重！');
+            }
+        }
+
+        function updateHistoryList() {
+            const list = document.getElementById('history-list');
+            const heightColor = currentTheme === 'pink' ? '#FF9A9E' : '#74B9FF';
+            
+            if (!currentKidId || !records[currentKidId]) {
+                list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-light);">暂无记录</div>';
+                return;
+            }
+            
+            list.innerHTML = records[currentKidId].map(record => `
+                <div class="history-item">
+                    <div class="history-date">${record.date}</div>
+                    <div class="history-data">
+                        <div class="history-data-item">
+                            <div class="history-data-label">身高</div>
+                            <div class="history-data-value" style="color: ${heightColor};">${record.height}cm</div>
+                        </div>
+                        <div class="history-data-item">
+                            <div class="history-data-label">体重</div>
+                            <div class="history-data-value" style="color: #7CB342;">${record.weight}kg</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        document.getElementById('record-date').value = new Date().toISOString().split('T')[0];
+        
+        // 初始化时设置当前孩子并更新首页数据
+        currentKidId = kids[0].id;
+        selectGender(currentTheme);
+        updateAvatar();
+        updateHomePageData();
+        updateChart();
+        
+        // 确保底部导航栏可见
+        document.querySelector('.bottom-nav').style.display = 'block';
+        
+        // 设置页面相关函数
+        function goToSettingsPage() {
+            goToPage('settings');
+        }
+        
+        function backupData() {
+            const data = {
+                kids: kids,
+                records: records,
+                currentKidId: currentKidId,
+                currentTheme: currentTheme,
+                backupTime: new Date().toISOString()
+            };
+            
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `宝宝成长记录备份_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.json`;
+            link.click();
+            
+            URL.revokeObjectURL(url);
+            alert('数据备份成功！文件已下载。');
+        }
+        
+        function restoreData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        
+                        if (data.kids && data.records) {
+                            kids = data.kids;
+                            records = data.records;
+                            currentKidId = data.currentKidId || kids[0].id;
+                            currentTheme = data.currentTheme || 'pink';
+                            
+                            document.body.className = currentTheme === 'pink' ? 'theme-pink' : 'theme-blue';
+                            updateAvatar();
+                            updateCharacterImage();
+                            updateChartColor();
+                            updateHomePageData();
+                            renderKidsList();
+                            
+                            alert('数据还原成功！');
+                            goToPage('home');
+                        } else {
+                            alert('无效的备份文件格式！');
+                        }
+                    } catch (error) {
+                        alert('文件解析失败，请检查文件格式！');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+    </script>
+</body>
+</html>

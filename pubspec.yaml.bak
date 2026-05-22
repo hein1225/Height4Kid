@@ -1,0 +1,42 @@
+name: height4kid
+description: 儿童成长记录应用 - 身高体重跟踪与国标数据对比
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  cupertino_icons: ^1.0.8          # 升至最新小版本
+  provider: ^6.1.2                 # 升至最新小版本
+  shared_preferences: ^2.3.5       # 升至最新
+  intl: ^0.20.2                    # 保持（Flutter 3.44 配套）
+  syncfusion_flutter_charts: ^33.2.7  # 保持（商业组件，谨慎升级）
+  image_picker: ^1.1.2             # 升至最新 1.x
+  image_picker_web: ^4.0.0         # 保持（与 image_picker 版本配套）
+  file_picker: ^11.0.2      # 原来 ^8.0.0
+  path_provider: ^2.1.5            # 升至最新
+  file_saver: ^0.4.0              # 保持（0.3+ 可能改变 API）
+  url_launcher: ^6.3.1             # 升至最新
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0            # 升至 5.x（6.x 可能规则更严）
+  flutter_launcher_icons: ^0.14.4    # 升至最新
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/images/软件图标.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/images/软件图标.png"
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
