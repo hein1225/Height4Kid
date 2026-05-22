@@ -44,11 +44,10 @@
 
 ## 应用截图
 
-### Web 端界面
-> 截图将在此处添加，请运行 `flutter run -d chrome` 后截图替换
-
 ### Android 端界面
-> 截图将在此处添加
+<img width="486" height="1030" alt="{D1DFDC68-116F-4A32-A306-3A7C1733CA97}" src="https://github.com/user-attachments/assets/cb22cc6c-c006-4d42-9f54-ac3d4b31eae5" /><img width="487" height="1030" alt="{E7472E60-ACC7-4E0B-BEB8-566FA690D7E5}" src="https://github.com/user-attachments/assets/a9f0ac0b-97e5-4d89-af75-d3ecdf22864b" />
+
+
 
 ## 项目结构
 
