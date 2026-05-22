@@ -249,7 +249,7 @@ class AppProvider extends ChangeNotifier {
   Future<String?> exportData() async {
     try {
       final exportData = {
-        'version': '1.0.0',
+        'version': '1.0.1',
         'exportTime': DateTime.now().toIso8601String(),
         'kids': _kids.map((k) => k.toJson()).toList(),
         'records': _records.map((kidId, records) => 

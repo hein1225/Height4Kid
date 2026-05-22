@@ -17,7 +17,7 @@ class UpdateInfo {
 }
 
 class UpdateChecker {
-  static const String _currentVersion = '1.0.0';
+  static const String _currentVersion = '1.0.1';
   static const String _githubApiUrl = 'https://api.github.com/repos/hein1225/Height4Kid/releases/latest';
   static const String _lastCheckKey = 'last_update_check';
   static const String _skippedVersionKey = 'skipped_update_version';

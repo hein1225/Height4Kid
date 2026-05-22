@@ -525,7 +525,7 @@ class SettingsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '版本 1.0.0',
+            '版本 1.0.1',
             style: TextStyle(
               fontSize: 14,
               color: AppTheme.textLight.withValues(alpha: 0.6),

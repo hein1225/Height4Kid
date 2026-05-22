@@ -1,7 +1,7 @@
 name: height4kid
 description: 儿童成长记录应用 - 身高体重跟踪与国标数据对比
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: '>=3.0.0 <4.0.0'

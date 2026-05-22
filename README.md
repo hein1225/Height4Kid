@@ -135,43 +135,68 @@ flutter build apk --release
 
 #### 1. 配置签名密钥
 
-在构建发布版本前，需要配置签名密钥。请在 `android/app/` 目录下创建 `key.properties` 文件：
+在构建发布版本前，需要配置签名密钥。
 
-```properties
-storePassword=您的密钥库密码
-keyPassword=您的密钥密码
-keyAlias=您的密钥别名
-storeFile=../keystore/您的密钥文件名.jks
-```
+**当前项目签名配置：**
 
-**密钥文件存放目录结构：**
+本项目已在 `android/app/build.gradle.kts` 中配置了发布签名，需要创建对应的密钥文件：
+
+**密钥文件存放位置：**
 ```
 android/
-├── app/
-│   ├── build.gradle.kts
-│   └── key.properties          # 密钥配置文件
-└── keystore/
-    └── your_key.jks            # 密钥文件（请自行创建）
+└── app/
+    ├── build.gradle.kts
+    └── height4kid-release-key.jks    # 密钥文件（需要创建）
 ```
 
-**创建密钥的方法：**
+**创建密钥文件：**
 ```bash
-# 进入 android 目录
-cd android
-
-# 创建 keystore 目录
-mkdir keystore
+# 进入 android/app 目录
+cd android/app
 
 # 生成密钥（使用 keytool）
-keytool -genkey -v -keystore keystore/your_key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias your_alias
+keytool -genkey -v -keystore height4kid-release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias height4kid
 
-# 按提示输入密钥库密码、密钥密码和个人信息
+# 按提示输入信息：
+# - 密钥库密码: height4kid2024
+# - 密钥密码: height4kid2024
+# - 姓名、组织等信息可随意填写
 ```
 
-**重要提示：**
-- 请妥善保管密钥文件和密码
-- 不要将 `key.properties` 和 `.jks` 文件提交到 Git 仓库（已添加到 .gitignore）
-- 密钥丢失后将无法更新已发布的应用
+**⚠️ 重要安全提示：**
+
+**必须妥善备份以下文件，否则将无法更新已发布的应用：**
+
+1. **JKS 密钥文件** (`android/app/height4kid-release-key.jks`)
+   - 这是应用签名的核心文件
+   - 丢失后将无法发布应用更新
+   - 建议备份到多个安全位置（如加密U盘、云存储、离线硬盘）
+
+2. **密钥信息记录**
+   - 密钥别名: `height4kid`
+   - 密钥库密码: `height4kid2024`
+   - 密钥密码: `height4kid2024`
+   - 有效期: 10000 天
+
+**安全注意事项：**
+- 不要将密钥文件提交到 Git 仓库（已添加到 .gitignore）
+- 不要将密钥文件上传到公共云盘或代码托管平台
+- 定期验证备份文件的可用性
+- 建议每年检查一次密钥的有效期
+
+**自定义签名配置（可选）：**
+
+如需使用不同的密钥配置，请修改 `android/app/build.gradle.kts` 文件中的 `signingConfigs` 部分：
+```kotlin
+signingConfigs {
+    create("release") {
+        keyAlias = "您的密钥别名"
+        keyPassword = "您的密钥密码"
+        storeFile = file("您的密钥文件名.jks")
+        storePassword = "您的密钥库密码"
+    }
+}
+```
 
 #### 2. 构建 APK
 
@@ -247,7 +272,7 @@ flutter run --verbose
 ## 常见问题
 
 ### Q: 构建失败提示签名问题？
-A: 请确保已正确配置 `key.properties` 文件，并将密钥文件放在 `android/keystore/` 目录下。
+A: 请确保已创建密钥文件 `android/app/height4kid-release-key.jks`，密码为 `height4kid2024`。如使用自定义密钥，请修改 `android/app/build.gradle.kts` 中的签名配置。
 
 ### Q: Web 端无法选择文件？
 A: 某些浏览器可能限制文件选择功能，建议使用 Chrome 或 Edge 浏览器。
