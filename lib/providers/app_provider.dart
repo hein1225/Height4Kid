@@ -160,6 +160,34 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateRecord(String recordId, {required String date, required double height, required double weight}) {
+    final childId = _currentKidId;
+    if (childId == null || !_records.containsKey(childId)) return;
+
+    final records = _records[childId]!;
+    final index = records.indexWhere((r) => r.id == recordId);
+    if (index != -1) {
+      records[index] = records[index].copyWith(
+        date: date,
+        height: height,
+        weight: weight,
+      );
+      _updateKidLatestValues(childId);
+      _saveData();
+      notifyListeners();
+    }
+  }
+
+  void deleteRecord(String recordId) {
+    final childId = _currentKidId;
+    if (childId == null || !_records.containsKey(childId)) return;
+
+    _records[childId]!.removeWhere((r) => r.id == recordId);
+    _updateKidLatestValues(childId);
+    _saveData();
+    notifyListeners();
+  }
+
   void _updateKidLatestValues(String kidId) {
     final records = _records[kidId] ?? [];
     if (records.isNotEmpty) {
