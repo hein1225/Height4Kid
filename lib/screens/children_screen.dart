@@ -300,10 +300,7 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
                       color: AppTheme.textDark,
                     ),
                   ),
-                  _HeaderButton(
-                    icon: Icons.add,
-                    onTap: _startAdd,
-                  ),
+                  const SizedBox(width: 40),
                 ],
               ),
             ),
@@ -315,6 +312,11 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
                     if (_isEditing) _buildKidForm(context, appProvider, primaryColor, secondaryColor),
                     if (_isEditing) const SizedBox(height: 24),
                     _buildKidList(appProvider, primaryColor),
+                    if (!_isEditing && appProvider.kids.isNotEmpty) ...[
+                      const SizedBox(height: 32),
+                      _buildAddKidButton(primaryColor, secondaryColor),
+                      const SizedBox(height: 24),
+                    ],
                   ],
                 ),
               ),
@@ -794,7 +796,10 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
               // Switch button
               if (!isSelected)
                 GestureDetector(
-                  onTap: () => appProvider.setCurrentKid(kid.id),
+                  onTap: () {
+                    appProvider.setCurrentKid(kid.id);
+                    appProvider.setPage('home');
+                  },
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
@@ -896,30 +901,30 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            '点击右上角添加，或导入已有数据',
+            '添加孩子开始记录成长',
             style: TextStyle(
               fontSize: 14,
               color: AppTheme.textLight.withValues(alpha: 0.4),
             ),
           ),
-          const SizedBox(height: 24),
-          // Import data button
+          const SizedBox(height: 32),
+          // 添加孩子按钮
           GestureDetector(
-            onTap: () => _importData(context, appProvider),
+            onTap: _startAdd,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [primaryColor, primaryColor.withValues(alpha: 0.8)],
+                  colors: [primaryColor, primaryColor.withValues(alpha: 0.85)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: primaryColor.withValues(alpha: 0.3),
-                    blurRadius: 15,
-                    offset: const Offset(0, 6),
+                    color: primaryColor.withValues(alpha: 0.35),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
                   ),
                 ],
               ),
@@ -927,16 +932,50 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    Icons.upload_file,
+                    Icons.add,
                     color: Colors.white,
-                    size: 20,
+                    size: 24,
                   ),
-                  SizedBox(width: 8),
+                  SizedBox(width: 12),
                   Text(
-                    '导入数据',
+                    '添加孩子',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 16,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // 导入数据按钮
+          GestureDetector(
+            onTap: () => _importData(context, appProvider),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: primaryColor.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.upload_file,
+                    color: primaryColor.withValues(alpha: 0.7),
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '导入已有数据',
+                    style: TextStyle(
+                      color: primaryColor.withValues(alpha: 0.8),
+                      fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -945,6 +984,58 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // 添加孩子按钮 - 醒目设计
+  Widget _buildAddKidButton(Color primaryColor, Color secondaryColor) {
+    return GestureDetector(
+      onTap: _startAdd,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [primaryColor, primaryColor.withValues(alpha: 0.85)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: primaryColor.withValues(alpha: 0.35),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.25),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.add,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              '添加孩子',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -975,7 +1066,7 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
           } else if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('导入失败，请检查文件格式'),
+                content: Text('导入失败，请检查文件格式或数据是否过大'),
                 backgroundColor: Colors.red,
               ),
             );

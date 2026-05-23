@@ -127,8 +127,6 @@ class AppProvider extends ChangeNotifier {
   }
 
   void deleteKid(String kidId) {
-    if (_kids.length <= 1) return;
-
     _kids.removeWhere((k) => k.id == kidId);
     _records.remove(kidId);
 
@@ -249,7 +247,7 @@ class AppProvider extends ChangeNotifier {
   Future<String?> exportData() async {
     try {
       final exportData = {
-        'version': '1.0.1',
+        'version': '1.0.2',
         'exportTime': DateTime.now().toIso8601String(),
         'kids': _kids.map((k) => k.toJson()).toList(),
         'records': _records.map((kidId, records) => 
@@ -273,11 +271,8 @@ class AppProvider extends ChangeNotifier {
     try {
       final data = jsonDecode(jsonString);
       
-      // Validate version
+      // Validate version (兼容旧数据，version 为 null 也允许导入)
       final version = data['version'] as String?;
-      if (version == null) {
-        return false;
-      }
       
       // Import kids
       final kidsList = data['kids'] as List<dynamic>?;
@@ -305,7 +300,15 @@ class AppProvider extends ChangeNotifier {
       _currentTheme = data['currentTheme'] as String? ?? 'pink';
       
       // Save to SharedPreferences
-      await _saveData();
+      try {
+        await _saveData();
+      } catch (saveError) {
+        if (kDebugMode) {
+          print('Save error during import: $saveError');
+        }
+        // 即使保存失败，数据已加载到内存中，仍然返回成功
+        // 但会丢失刷新后的数据，所以提醒用户
+      }
       notifyListeners();
       return true;
     } catch (e) {

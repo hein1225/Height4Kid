@@ -56,29 +56,52 @@ class HomeScreen extends StatelessWidget {
                                 children: [
                                   GestureDetector(
                                     onTap: () => appProvider.setPage('kids'),
-                                    child: Container(
-                                      width: 48,
-                                      height: 48,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(24),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withValues(alpha: 0.1),
-                                            blurRadius: 8,
-                                            offset: const Offset(0, 4),
+                                    child: Stack(
+                                      children: [
+                                        Container(
+                                          width: 48,
+                                          height: 48,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(24),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withValues(alpha: 0.1),
+                                                blurRadius: 8,
+                                                offset: const Offset(0, 4),
+                                              ),
+                                            ],
+                                            border: Border.all(
+                                              color: Colors.white,
+                                              width: 2,
+                                            ),
                                           ),
-                                        ],
-                                        border: Border.all(
-                                          color: Colors.white,
-                                          width: 2,
+                                          child: kid.avatar != null
+                                              ? ClipOval(
+                                                  child: _buildAvatarImage(kid.avatar!, isPink),
+                                                )
+                                              : _defaultAvatar(isPink),
                                         ),
-                                      ),
-                                      child: kid.avatar != null
-                                          ? ClipOval(
-                                              child: _buildAvatarImage(kid.avatar!, isPink),
-                                            )
-                                          : _defaultAvatar(isPink),
+                                        // 切换标识
+                                        Positioned(
+                                          right: 0,
+                                          bottom: 0,
+                                          child: Container(
+                                            width: 16,
+                                            height: 16,
+                                            decoration: BoxDecoration(
+                                              color: isPink ? AppTheme.pinkPrimary : AppTheme.bluePrimary,
+                                              borderRadius: BorderRadius.circular(8),
+                                              border: Border.all(color: Colors.white, width: 2),
+                                            ),
+                                            child: const Icon(
+                                              Icons.swap_horiz,
+                                              size: 10,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                   const SizedBox(width: 12),

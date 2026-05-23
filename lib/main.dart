@@ -1,8 +1,8 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'providers/app_provider.dart';
 import 'theme/app_theme.dart';
 import 'screens/home_screen.dart';
@@ -13,7 +13,6 @@ import 'screens/settings_screen.dart';
 import 'screens/permission_wizard_screen.dart';
 import 'utils/permission_manager.dart';
 import 'utils/update_checker.dart';
-import 'models/child.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,6 +37,15 @@ class _HeightKidAppState extends State<HeightKidApp> {
   }
 
   Future<void> _checkPermissions() async {
+    // Web端不需要权限检查
+    if (kIsWeb) {
+      setState(() {
+        _permissionsChecked = true;
+        _permissionsGranted = true;
+      });
+      return;
+    }
+    
     if (Platform.isAndroid) {
       // 检查所有权限状态，不立即请求
       final permissions = await PermissionManager().checkAllPermissions();
@@ -160,81 +168,51 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _showUpdateDialog(UpdateInfo updateInfo) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.system_update, color: Colors.green, size: 28),
-            const SizedBox(width: 8),
-            const Text('发现新版本'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('当前版本: ${UpdateChecker.currentVersion}'),
-            Text('最新版本: ${updateInfo.version}'),
-            const SizedBox(height: 12),
-            const Text(
-              '💡 建议先备份数据后再更新',
-              style: TextStyle(
-                color: Colors.orange,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            if (updateInfo.releaseNotes.isNotEmpty) ...[
+    // 在Web端或非Android平台，显示简单的更新提示
+    if (kIsWeb || !Platform.isAndroid) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.system_update, color: Colors.green, size: 28),
+              const SizedBox(width: 8),
+              const Text('发现新版本'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('当前版本: ${UpdateChecker.currentVersion}'),
+              Text('最新版本: ${updateInfo.version}'),
+              const SizedBox(height: 12),
               const Text(
-                '更新内容:',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 4),
-              Container(
-                constraints: const BoxConstraints(maxHeight: 150),
-                child: SingleChildScrollView(
-                  child: Text(
-                    updateInfo.releaseNotes,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey[600],
-                    ),
-                  ),
+                '请访问GitHub下载最新版本',
+                style: TextStyle(
+                  color: Colors.orange,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('知道了'),
+            ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              UpdateChecker.skipVersion(updateInfo.version);
-              Navigator.pop(context);
-            },
-            child: const Text('跳过此版本'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('稍后提醒'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              final uri = Uri.parse(updateInfo.downloadUrl);
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('前往更新'),
-          ),
-        ],
-      ),
+      );
+      return;
+    }
+
+    // Android端显示自动更新对话框
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => _UpdateDialog(updateInfo: updateInfo),
     );
   }
 
@@ -463,61 +441,47 @@ class _MainScreenState extends State<MainScreen> {
     final isPink = appProvider.currentTheme == 'pink';
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 4),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 40,
-            offset: const Offset(0, -10),
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
           ),
         ],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: AppTheme.navBg,
-              borderRadius: BorderRadius.circular(30),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppTheme.navBg,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        padding: const EdgeInsets.all(6),
+        child: Row(
+          children: [
+            Expanded(
+              child: _NavButton(
+                label: '今日记录',
+                isActive: appProvider.currentPage == 'home',
+                onTap: () => appProvider.setPage('home'),
+              ),
             ),
-            padding: const EdgeInsets.all(8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _NavButton(
-                    label: '今日记录',
-                    isActive: appProvider.currentPage == 'home',
-                    onTap: () => appProvider.setPage('home'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                _AddButton(
-                  onTap: () => appProvider.setPage('record'),
-                  isPink: isPink,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _NavButton(
-                    label: '历史记录',
-                    isActive: appProvider.currentPage == 'history',
-                    onTap: () => appProvider.setPage('history'),
-                  ),
-                ),
-              ],
+            const SizedBox(width: 8),
+            _AddButton(
+              onTap: () => appProvider.setPage('record'),
+              isPink: isPink,
             ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            width: 134,
-            height: 5,
-            decoration: BoxDecoration(
-              color: Colors.black,
-              borderRadius: BorderRadius.circular(100),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _NavButton(
+                label: '历史记录',
+                isActive: appProvider.currentPage == 'history',
+                onTap: () => appProvider.setPage('history'),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -540,15 +504,15 @@ class _NavButton extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
         decoration: BoxDecoration(
           color: isActive ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: isActive ? [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 15,
-              offset: const Offset(0, 4),
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
           ] : [],
         ),
@@ -556,7 +520,7 @@ class _NavButton extends StatelessWidget {
           label,
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontSize: 16,
+            fontSize: 13,
             fontWeight: FontWeight.w600,
             color: isActive ? AppTheme.textDark : AppTheme.textLight,
           ),
@@ -608,6 +572,217 @@ class _AddButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+// 自动更新对话框
+class _UpdateDialog extends StatefulWidget {
+  final UpdateInfo updateInfo;
+
+  const _UpdateDialog({required this.updateInfo});
+
+  @override
+  State<_UpdateDialog> createState() => _UpdateDialogState();
+}
+
+class _UpdateDialogState extends State<_UpdateDialog> {
+  bool _isDownloading = false;
+  bool _isInstalling = false;
+  double _downloadProgress = 0;
+  String? _errorMessage;
+  String? _downloadedFilePath;
+
+  /// 第一步：下载APK
+  Future<void> _downloadApk() async {
+    if (widget.updateInfo.apkDownloadUrl == null) {
+      setState(() {
+        _errorMessage = '未找到APK下载链接';
+      });
+      return;
+    }
+
+    setState(() {
+      _isDownloading = true;
+      _downloadProgress = 0;
+      _errorMessage = null;
+    });
+
+    final filePath = await UpdateChecker.downloadApk(
+      widget.updateInfo.apkDownloadUrl!,
+      widget.updateInfo.version,
+      (progress) {
+        setState(() {
+          _downloadProgress = progress;
+        });
+      },
+    );
+
+    if (filePath == null) {
+      setState(() {
+        _isDownloading = false;
+        _errorMessage = '下载失败，请检查网络后重试';
+      });
+    } else {
+      setState(() {
+        _isDownloading = false;
+        _downloadedFilePath = filePath;
+      });
+      // 下载成功，自动进入安装步骤
+      await _installApk();
+    }
+  }
+
+  /// 第二步：安装APK
+  Future<void> _installApk() async {
+    if (_downloadedFilePath == null) {
+      setState(() {
+        _errorMessage = '安装文件不存在，请重新下载';
+      });
+      return;
+    }
+
+    setState(() {
+      _isInstalling = true;
+      _errorMessage = null;
+    });
+
+    final success = await UpdateChecker.installApk(_downloadedFilePath!);
+
+    setState(() {
+      _isInstalling = false;
+    });
+
+    if (!success) {
+      setState(() {
+        _errorMessage = '安装失败，请检查是否允许安装未知应用后重试';
+      });
+    } else {
+      // 安装成功，关闭对话框
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Row(
+        children: [
+          Icon(Icons.system_update, color: Colors.green, size: 28),
+          const SizedBox(width: 8),
+          const Text('发现新版本'),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('当前版本: ${UpdateChecker.currentVersion}'),
+          Text('最新版本: ${widget.updateInfo.version}'),
+          const SizedBox(height: 12),
+          const Text(
+            '💡 建议先备份数据后再更新',
+            style: TextStyle(
+              color: Colors.orange,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (widget.updateInfo.releaseNotes.isNotEmpty) ...[
+            const Text(
+              '更新内容:',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 4),
+            Container(
+              constraints: const BoxConstraints(maxHeight: 100),
+              child: SingleChildScrollView(
+                child: Text(
+                  widget.updateInfo.releaseNotes,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ),
+            ),
+          ],
+          if (_isDownloading) ...[
+            const SizedBox(height: 16),
+            LinearProgressIndicator(value: _downloadProgress),
+            const SizedBox(height: 8),
+            Text(
+              '下载中: ${(_downloadProgress * 100).toStringAsFixed(0)}%',
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+          if (_isInstalling) ...[
+            const SizedBox(height: 16),
+            const LinearProgressIndicator(),
+            const SizedBox(height: 8),
+            Text(
+              '正在安装，请允许安装权限...',
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+          if (_errorMessage != null) ...[
+            const SizedBox(height: 16),
+            Text(
+              _errorMessage!,
+              style: const TextStyle(
+                color: Colors.red,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ],
+      ),
+      actions: [
+        if (!_isDownloading && !_isInstalling) ...[
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('稍后更新'),
+          ),
+          if (_downloadedFilePath == null)
+            ElevatedButton(
+              onPressed: _downloadApk,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(120, 40),
+              ),
+              child: const Text('立即更新'),
+            )
+          else
+            ElevatedButton(
+              onPressed: _installApk,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(120, 40),
+              ),
+              child: const Text('立即安装'),
+            ),
+        ] else if (_isDownloading) ...[
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('后台下载'),
+          ),
+        ] else if (_isInstalling) ...[
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('后台安装'),
+          ),
+        ],
+      ],
     );
   }
 }

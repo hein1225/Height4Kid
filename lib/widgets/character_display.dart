@@ -137,7 +137,7 @@ class CharacterDisplay extends StatelessWidget {
                       : null,
                 ),
               ),
-              // Weight tag with evaluation
+              // Weight tag
               Positioned(
                 left: 20,
                 top: 140,
@@ -146,9 +146,20 @@ class CharacterDisplay extends StatelessWidget {
                   value: latestRecord != null ? '${latestRecord.weight}kg' : '—',
                   dotColor: AppTheme.weightColor,
                   valueColor: AppTheme.weightValueColor,
+                  evalResult: null, // 体重不显示评估
+                ),
+              ),
+              // BMI tag with evaluation
+              Positioned(
+                left: 20,
+                top: 200,
+                child: _BmiTagWithEval(
+                  bmi: latestRecord != null && kid != null
+                      ? latestRecord.weight / ((latestRecord.height / 100) * (latestRecord.height / 100))
+                      : null,
                   evalResult: latestRecord != null && kid != null
-                      ? StandardData.evaluateWeight(
-                          latestRecord.weight,
+                      ? StandardData.evaluateBmi(
+                          latestRecord.weight / ((latestRecord.height / 100) * (latestRecord.height / 100)),
                           kid.getAgeInMonths(latestRecord.date) / 12,
                           isPink ? 'girl' : 'boy',
                         )
@@ -489,15 +500,134 @@ class _DataTagWithEval extends StatelessWidget {
     switch (result) {
       case '矮小':
       case '偏瘦':
+      case '低体重':
         return const Color(0xFFFF6B6B);
       case '偏矮':
       case '超重':
         return const Color(0xFFFFA726);
       case '标准':
+      case '正常':
         return const Color(0xFF66BB6A);
+      case '偏高':
+        return const Color(0xFF42A5F5);
       case '超高':
       case '肥胖':
-        return const Color(0xFF42A5F5);
+        return const Color(0xFF2196F3);
+      default:
+        return AppTheme.textLight;
+    }
+  }
+}
+
+// BMI标签组件
+class _BmiTagWithEval extends StatelessWidget {
+  final double? bmi;
+  final String? evalResult;
+
+  const _BmiTagWithEval({
+    this.bmi,
+    this.evalResult,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.7),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // 指示点
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: AppTheme.weightColor.withValues(alpha: 0.8),
+              borderRadius: BorderRadius.circular(5),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.5),
+                width: 1.5,
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          // 标签和数值
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'BMI：',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: AppTheme.textDark.withValues(alpha: 0.7),
+                    ),
+                  ),
+                  Text(
+                    bmi != null ? bmi!.toStringAsFixed(1) : '—',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.weightValueColor.withValues(alpha: 0.9),
+                    ),
+                  ),
+                ],
+              ),
+              // 评估结果 - 融入气泡内部
+              if (evalResult != null) ...[
+                const SizedBox(height: 2),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: _getBmiEvalColor(evalResult!).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    evalResult!,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: _getBmiEvalColor(evalResult!),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getBmiEvalColor(String result) {
+    switch (result) {
+      case '低体重':
+        return const Color(0xFFFF6B6B);
+      case '正常':
+        return const Color(0xFF66BB6A);
+      case '超重':
+        return const Color(0xFFFFA726);
+      case '肥胖':
+        return const Color(0xFF2196F3);
       default:
         return AppTheme.textLight;
     }

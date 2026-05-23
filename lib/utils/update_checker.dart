@@ -1,23 +1,31 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dio/dio.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_file/open_file.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class UpdateInfo {
   final String version;
   final String downloadUrl;
+  final String? apkDownloadUrl;
   final String releaseNotes;
   final bool hasUpdate;
 
   UpdateInfo({
     required this.version,
     required this.downloadUrl,
+    this.apkDownloadUrl,
     required this.releaseNotes,
     required this.hasUpdate,
   });
 }
 
 class UpdateChecker {
-  static const String _currentVersion = '1.0.1';
+  static const String _currentVersion = '1.0.2';
   static const String _githubApiUrl = 'https://api.github.com/repos/hein1225/Height4Kid/releases/latest';
   static const String _lastCheckKey = 'last_update_check';
   static const String _skippedVersionKey = 'skipped_update_version';
@@ -54,6 +62,19 @@ class UpdateChecker {
       final downloadUrl = data['html_url'] as String;
       final releaseNotes = data['body'] as String? ?? '';
 
+      // 查找APK下载链接
+      String? apkDownloadUrl;
+      final assets = data['assets'] as List<dynamic>?;
+      if (assets != null) {
+        for (final asset in assets) {
+          final name = asset['name'] as String;
+          if (name.endsWith('.apk')) {
+            apkDownloadUrl = asset['browser_download_url'] as String;
+            break;
+          }
+        }
+      }
+
       // 比较版本号
       final hasUpdate = _compareVersions(latestVersion, _currentVersion) > 0;
 
@@ -64,6 +85,7 @@ class UpdateChecker {
           return UpdateInfo(
             version: latestVersion,
             downloadUrl: downloadUrl,
+            apkDownloadUrl: apkDownloadUrl,
             releaseNotes: releaseNotes,
             hasUpdate: false,
           );
@@ -73,11 +95,107 @@ class UpdateChecker {
       return UpdateInfo(
         version: latestVersion,
         downloadUrl: downloadUrl,
+        apkDownloadUrl: apkDownloadUrl,
         releaseNotes: releaseNotes,
         hasUpdate: hasUpdate,
       );
     } catch (e) {
       return null;
+    }
+  }
+
+  /// 下载APK
+  /// 返回下载的文件路径，下载失败返回null
+  static Future<String?> downloadApk(
+    String apkUrl,
+    String version,
+    void Function(double progress) onProgress,
+  ) async {
+    // Web端不支持下载APK
+    if (kIsWeb) {
+      debugPrint('Web端不支持下载APK');
+      return null;
+    }
+
+    try {
+      // 获取下载目录 - 使用应用私有缓存目录，避免权限问题
+      Directory? downloadDir;
+      if (Platform.isAndroid) {
+        // 优先使用应用私有外部存储目录，不需要额外权限
+        downloadDir = await getExternalCacheDirectories().then((dirs) => dirs?.first);
+        // 如果获取失败，使用应用缓存目录
+        downloadDir ??= await getTemporaryDirectory();
+      } else {
+        downloadDir = await getTemporaryDirectory();
+      }
+
+      if (downloadDir == null) {
+        debugPrint('无法获取下载目录');
+        return null;
+      }
+
+      // 使用最新版本号作为文件名
+      final filePath = '${downloadDir.path}/Height4Kid_v${version}.apk';
+      debugPrint('APK下载路径: $filePath');
+
+      // 使用Dio下载文件
+      final dio = Dio();
+      await dio.download(
+        apkUrl,
+        filePath,
+        onReceiveProgress: (received, total) {
+          if (total != -1) {
+            onProgress(received / total);
+          }
+        },
+      );
+
+      debugPrint('APK下载完成: $filePath');
+      return filePath;
+    } catch (e) {
+      debugPrint('APK下载失败: $e');
+      return null;
+    }
+  }
+
+  /// 安装APK
+  /// 在安装时请求安装权限
+  static Future<bool> installApk(String filePath) async {
+    // Web端不支持安装APK
+    if (kIsWeb) {
+      debugPrint('Web端不支持安装APK');
+      return false;
+    }
+
+    try {
+      // 检查文件是否存在
+      final file = File(filePath);
+      if (!await file.exists()) {
+        debugPrint('APK文件不存在: $filePath');
+        return false;
+      }
+
+      // Android 8.0+ 需要请求安装未知应用的权限
+      if (Platform.isAndroid) {
+        final canInstall = await Permission.requestInstallPackages.isGranted;
+        if (!canInstall) {
+          debugPrint('请求安装权限');
+          final status = await Permission.requestInstallPackages.request();
+          if (!status.isGranted) {
+            debugPrint('安装权限被拒绝');
+            return false;
+          }
+        }
+      }
+
+      debugPrint('开始安装APK: $filePath');
+      // 安装APK
+      final result = await OpenFile.open(filePath, type: 'application/vnd.android.package-archive');
+      debugPrint('安装结果: ${result.type}, ${result.message}');
+      return result.type == ResultType.done;
+    } catch (e) {
+      debugPrint('APK安装失败: $e');
+      return false;
     }
   }
 
