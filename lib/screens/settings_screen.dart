@@ -52,10 +52,6 @@ class SettingsScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildSectionTitle('主题设置'),
-                    const SizedBox(height: 16),
-                    _buildThemeSelector(appProvider, isPink),
-                    const SizedBox(height: 32),
                     _buildSectionTitle('数据管理'),
                     const SizedBox(height: 16),
                     _buildDataActions(context, appProvider, primaryColor, secondaryColor),
@@ -229,122 +225,6 @@ class SettingsScreen extends StatelessWidget {
         );
       }
     }
-  }
-
-  Widget _buildThemeSelector(AppProvider appProvider, bool isPink) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 30,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(20),
-      child: Row(
-        children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: () => appProvider.setTheme('pink'),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
-                  gradient: isPink
-                      ? const LinearGradient(
-                          colors: [AppTheme.pinkPrimary, AppTheme.pinkSecondary],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        )
-                      : null,
-                  color: isPink ? null : AppTheme.formBg,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: isPink
-                      ? [
-                          BoxShadow(
-                            color: AppTheme.pinkPrimary.withValues(alpha: 0.4),
-                            blurRadius: 20,
-                            offset: const Offset(0, 6),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.favorite,
-                      color: isPink ? Colors.white : AppTheme.pinkPrimary,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '粉色主题',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: isPink ? Colors.white : AppTheme.textDark,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: GestureDetector(
-              onTap: () => appProvider.setTheme('blue'),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
-                  gradient: !isPink
-                      ? const LinearGradient(
-                          colors: [AppTheme.bluePrimary, AppTheme.blueSecondary],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        )
-                      : null,
-                  color: !isPink ? null : AppTheme.formBg,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: !isPink
-                      ? [
-                          BoxShadow(
-                            color: AppTheme.bluePrimary.withValues(alpha: 0.4),
-                            blurRadius: 20,
-                            offset: const Offset(0, 6),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.water_drop,
-                      color: !isPink ? Colors.white : AppTheme.bluePrimary,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '蓝色主题',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: !isPink ? Colors.white : AppTheme.textDark,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildDataActions(
@@ -540,8 +420,32 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          // 检查更新按钮
-          _buildUpdateButton(context),
+          // 检查更新按钮区域
+          Row(
+            children: [
+              // 国内渠道检查更新
+              Expanded(
+                child: _buildChannelUpdateButton(
+                  context,
+                  channel: UpdateChannel.gitcode,
+                  label: '国内渠道检查',
+                  icon: Icons.speed,
+                  color: const Color(0xFF2E8B57),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // GitHub渠道检查更新
+              Expanded(
+                child: _buildChannelUpdateButton(
+                  context,
+                  channel: UpdateChannel.github,
+                  label: 'GitHub检查',
+                  icon: Icons.public,
+                  color: const Color(0xFF24292E),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 20),
           const Divider(height: 1),
           const SizedBox(height: 20),
@@ -564,11 +468,82 @@ class SettingsScreen extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 16),
+          // 给星支持提示
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.star,
+                size: 16,
+                color: const Color(0xFFFFA500).withValues(alpha: 0.8),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '给星支持',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textLight.withValues(alpha: 0.8),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 12),
-          // GitHub 地址 - 可点击
+          // 国内渠道 - GitCode
           GestureDetector(
-            onTap: () => _launchUrl('https://github.com/hein1225/Height4Kid'),
+            onTap: () => _launchUrl(UpdateChecker.updateChannels[0].starUrl),
             child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2E8B57).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFF2E8B57).withValues(alpha: 0.3),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.code,
+                        size: 16,
+                        color: Color(0xFF2E8B57),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        '国内渠道 (GitCode)',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF2E8B57),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    UpdateChecker.updateChannels[0].starUrl,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF2E8B57),
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // GitHub 渠道
+          GestureDetector(
+            onTap: () => _launchUrl(UpdateChecker.updateChannels[1].starUrl),
+            child: Container(
+              width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
                 color: const Color(0xFF24292E).withValues(alpha: 0.1),
@@ -579,9 +554,9 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(
                         Icons.code,
@@ -590,7 +565,7 @@ class SettingsScreen extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       const Text(
-                        'GitHub',
+                        'GitHub渠道',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -600,54 +575,12 @@ class SettingsScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    'https://github.com/hein1225/Height4Kid',
-                    style: TextStyle(
+                  Text(
+                    UpdateChecker.updateChannels[1].starUrl,
+                    style: const TextStyle(
                       fontSize: 12,
                       color: Color(0xFF0366D6),
                       decoration: TextDecoration.underline,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          // Star 提示 - 可点击
-          GestureDetector(
-            onTap: () => _launchUrl('https://github.com/hein1225/Height4Kid'),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFFFA500).withValues(alpha: 0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.star,
-                    color: Colors.white,
-                    size: 18,
-                  ),
-                  SizedBox(width: 6),
-                  Text(
-                    '请给予 Star 支持',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
                     ),
                   ),
                 ],
@@ -659,8 +592,14 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  // 构建检查更新按钮
-  Widget _buildUpdateButton(BuildContext context) {
+  // 构建指定渠道的检查更新按钮
+  Widget _buildChannelUpdateButton(
+    BuildContext context, {
+    required UpdateChannel channel,
+    required String label,
+    required IconData icon,
+    required Color color,
+  }) {
     return StatefulBuilder(
       builder: (context, setState) {
         bool isChecking = false;
@@ -671,7 +610,12 @@ class SettingsScreen extends StatelessWidget {
               : () async {
                   setState(() => isChecking = true);
 
-                  final updateInfo = await UpdateChecker.checkUpdate(force: true);
+                  UpdateInfo? updateInfo;
+                  if (channel == UpdateChannel.gitcode) {
+                    updateInfo = await UpdateChecker.checkGitCodeUpdate();
+                  } else {
+                    updateInfo = await UpdateChecker.checkGitHubUpdate();
+                  }
 
                   if (context.mounted) {
                     setState(() => isChecking = false);
@@ -679,8 +623,8 @@ class SettingsScreen extends StatelessWidget {
                     if (updateInfo == null) {
                       // 检查失败
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('检查更新失败，请检查网络连接'),
+                        SnackBar(
+                          content: Text('$label失败，请检查网络连接'),
                           backgroundColor: Colors.red,
                         ),
                       );
@@ -699,46 +643,46 @@ class SettingsScreen extends StatelessWidget {
                   }
                 },
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.green, Colors.green.shade600],
+                colors: [color, color.withValues(alpha: 0.8)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.green.withValues(alpha: 0.3),
-                  blurRadius: 15,
-                  offset: const Offset(0, 6),
+                  color: color.withValues(alpha: 0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
             child: Row(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (isChecking)
-                  const SizedBox(
-                    width: 20,
-                    height: 20,
+                  SizedBox(
+                    width: 18,
+                    height: 18,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                   )
                 else
-                  const Icon(
-                    Icons.system_update,
+                  Icon(
+                    icon,
                     color: Colors.white,
-                    size: 20,
+                    size: 18,
                   ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 Text(
-                  isChecking ? '检查中...' : '检查更新',
+                  isChecking ? '检查中' : label,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 16,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -862,6 +806,53 @@ class _UpdateDialogState extends State<_UpdateDialog> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: widget.updateInfo.channel == UpdateChannel.gitcode
+                      ? const Color(0xFF2E8B57).withValues(alpha: 0.1)
+                      : const Color(0xFF24292E).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: widget.updateInfo.channel == UpdateChannel.gitcode
+                        ? const Color(0xFF2E8B57)
+                        : const Color(0xFF24292E),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      widget.updateInfo.channel == UpdateChannel.gitcode
+                          ? Icons.speed
+                          : Icons.public,
+                      size: 14,
+                      color: widget.updateInfo.channel == UpdateChannel.gitcode
+                          ? const Color(0xFF2E8B57)
+                          : const Color(0xFF24292E),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      widget.updateInfo.channel == UpdateChannel.gitcode
+                          ? '国内渠道'
+                          : 'GitHub渠道',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: widget.updateInfo.channel == UpdateChannel.gitcode
+                            ? const Color(0xFF2E8B57)
+                            : const Color(0xFF24292E),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
           Text('当前版本: ${UpdateChecker.currentVersion}'),
           Text('最新版本: ${widget.updateInfo.version}'),
           const SizedBox(height: 12),

@@ -118,8 +118,7 @@ class _GrowthChartState extends State<GrowthChart> {
     dynamic recordAtAge;
     double? recordAtAgeYears;
     for (final record in records) {
-      final ageMonths = kid?.getAgeInMonths(record.date) ?? 0;
-      final ageYears = ageMonths / 12;
+      final ageYears = kid?.getAgeInYears(record.date) ?? 0;
       if ((ageYears - age).abs() < 0.5) {
         recordAtAge = record;
         recordAtAgeYears = ageYears;
@@ -133,8 +132,7 @@ class _GrowthChartState extends State<GrowthChart> {
     double? closestDistance;
     if (recordAtAge == null) {
       for (final record in records) {
-        final ageMonths = kid?.getAgeInMonths(record.date) ?? 0;
-        final ageYears = ageMonths / 12;
+        final ageYears = kid?.getAgeInYears(record.date) ?? 0;
         final distance = (ageYears - age).abs();
         if (closestDistance == null || distance < closestDistance) {
           closestDistance = distance;
@@ -327,8 +325,7 @@ class _GrowthChartState extends State<GrowthChart> {
   Widget _buildRecordValueRow(dynamic record, bool isHeight, bool isPink, dynamic kid) {
     final unit = isHeight ? 'cm' : 'kg';
     final value = isHeight ? record.height : record.weight;
-    final ageMonths = kid?.getAgeInMonths(record.date) ?? 0;
-    final ageYears = ageMonths / 12;
+    final ageYears = kid?.getAgeInYears(record.date) ?? 0;
 
     // 使用StandardData的评估方法，确保与成长状态一致
     final gender = isPink ? 'girl' : 'boy';
@@ -500,8 +497,8 @@ class _GrowthChartState extends State<GrowthChart> {
     if (index >= records.length) return const SizedBox.shrink();
 
     final record = records[index];
-    final ageMonths = kid?.getAgeInMonths(record.date) ?? 0;
-    final ageYears = ageMonths / 12; // 使用精确年龄（含小数）
+    final ageYears = kid?.getAgeInYears(record.date) ?? 0; // 使用精确年龄（含小数，精确到天）
+    final ageMonths = (ageYears * 12).round();
     final ageYearsInt = ageMonths ~/ 12;
     final ageMonthsRemainder = ageMonths % 12;
 
@@ -996,7 +993,7 @@ class _GrowthChartState extends State<GrowthChart> {
     final standards = StandardData.getStandards(isPink ? 'girl' : 'boy', isHeight);
 
     // 非全屏模式：显示当前年龄前后1岁，从0岁开始
-    double currentAge = kid != null ? kid.getAgeInMonths(DateTime.now().toString().substring(0, 10)) / 12 : 3;
+    double currentAge = kid != null ? kid.getAgeInYears(DateTime.now().toString().substring(0, 10)) : 3;
     double minAge = (currentAge - 1).clamp(0, 17).toDouble();
     double maxAge = (currentAge + 1).clamp(0, 18).toDouble();
 
@@ -1032,8 +1029,7 @@ class _GrowthChartState extends State<GrowthChart> {
     // 考虑该年龄范围内的所有记录值
     if (records.isNotEmpty && kid != null) {
       for (final record in records) {
-        final ageMonths = kid.getAgeInMonths(record.date);
-        final ageYears = ageMonths / 12;
+        final ageYears = kid.getAgeInYears(record.date);
         if (ageYears >= minAge && ageYears <= maxAge) {
           final val = isHeight ? record.height : record.weight;
           if (val < rangeMinVal) rangeMinVal = val;
@@ -1119,8 +1115,7 @@ class _GrowthChartState extends State<GrowthChart> {
 
       for (int i = 0; i < records.length; i++) {
         final record = records[i];
-        final ageMonths = kid.getAgeInMonths(record.date);
-        final ageYears = ageMonths / 12;
+        final ageYears = kid.getAgeInYears(record.date);
 
         if (ageYears >= minAge && ageYears <= maxAge) {
           final x = paddingLeft + ((ageYears - minAge) / (maxAge - minAge)) * drawWidth;
@@ -1190,6 +1185,14 @@ class _GrowthChartState extends State<GrowthChart> {
       _showAgeInfo = false;
     });
   }
+}
+
+// 图表点数据类，存储坐标和原始记录索引
+class _ChartPoint {
+  final Offset offset;
+  final int recordIndex;
+
+  _ChartPoint({required this.offset, required this.recordIndex});
 }
 
 class _ChartTab extends StatelessWidget {
@@ -1427,22 +1430,22 @@ class _GrowthChartPainter extends CustomPainter {
 
     final path = Path();
     final areaPath = Path();
-    final points = <Offset>[];
+    // 存储点和对应的原始记录索引
+    final points = <_ChartPoint>[];
 
     for (int i = 0; i < records.length; i++) {
       final record = records[i];
-      final ageMonths = kid.getAgeInMonths(record.date);
-      final ageYears = ageMonths / 12;
+      final ageYears = kid.getAgeInYears(record.date);
 
       if (ageYears >= minAge && ageYears <= maxAge) {
         final x = padding.left + ((ageYears - minAge) / (maxAge - minAge)) * chartWidth;
-        
+
         // 限制Y坐标在图表范围内
         double normalizedY = (((isHeight ? record.height : record.weight) - minVal) / (maxVal - minVal));
         normalizedY = normalizedY.clamp(0.0, 1.0);
         final y = padding.top + chartHeight - normalizedY * chartHeight;
-        
-        points.add(Offset(x, y));
+
+        points.add(_ChartPoint(offset: Offset(x, y), recordIndex: i));
       }
     }
 
@@ -1456,16 +1459,16 @@ class _GrowthChartPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
-    path.moveTo(points.first.dx, points.first.dy);
-    areaPath.moveTo(points.first.dx, padding.top + chartHeight);
-    areaPath.lineTo(points.first.dx, points.first.dy);
+    path.moveTo(points.first.offset.dx, points.first.offset.dy);
+    areaPath.moveTo(points.first.offset.dx, padding.top + chartHeight);
+    areaPath.lineTo(points.first.offset.dx, points.first.offset.dy);
 
     for (int i = 1; i < points.length; i++) {
-      path.lineTo(points[i].dx, points[i].dy);
-      areaPath.lineTo(points[i].dx, points[i].dy);
+      path.lineTo(points[i].offset.dx, points[i].offset.dy);
+      areaPath.lineTo(points[i].offset.dx, points[i].offset.dy);
     }
 
-    areaPath.lineTo(points.last.dx, padding.top + chartHeight);
+    areaPath.lineTo(points.last.offset.dx, padding.top + chartHeight);
     areaPath.close();
 
     // 绘制渐变填充 - 更透明
@@ -1487,21 +1490,67 @@ class _GrowthChartPainter extends CustomPainter {
     canvas.drawPath(areaPath, areaPaint);
     canvas.drawPath(path, linePaint);
 
+    // 检测是否有重叠的点（年龄非常接近）
+    final overlappingGroups = <List<int>>[];
+    final processed = <int>{};
+    
+    for (int i = 0; i < points.length; i++) {
+      if (processed.contains(i)) continue;
+      
+      final group = [i];
+      processed.add(i);
+      
+      for (int j = i + 1; j < points.length; j++) {
+        if (processed.contains(j)) continue;
+        
+        // 计算两点之间的距离（像素）
+        final dx = points[i].offset.dx - points[j].offset.dx;
+        final dy = points[i].offset.dy - points[j].offset.dy;
+        final distance = math.sqrt(dx * dx + dy * dy);
+        
+        // 如果距离小于8像素，认为是重叠的点
+        if (distance < 8) {
+          group.add(j);
+          processed.add(j);
+        }
+      }
+      
+      if (group.length > 1) {
+        overlappingGroups.add(group);
+      }
+    }
+
     // 绘制数据点 - 纯色、半透明、无边框
     for (int i = 0; i < points.length; i++) {
-      final isSelected = selectedRecordIndex == i;
+      final isSelected = selectedRecordIndex == points[i].recordIndex;
       final pointPaint = Paint()
         ..color = isSelected ? AppTheme.highlightPoint : color.withValues(alpha: 0.6)
         ..style = PaintingStyle.fill;
 
-      canvas.drawCircle(points[i], isSelected ? 6 : 3, pointPaint);
+      // 检查这个点是否在重叠组中
+      Offset displayOffset = points[i].offset;
+      double pointRadius = isSelected ? 6 : 4;
+      
+      for (final group in overlappingGroups) {
+        final indexInGroup = group.indexOf(i);
+        if (indexInGroup != -1) {
+          // 在重叠组中，错开显示
+          // 根据在组中的位置，稍微偏移
+          final offsetX = (indexInGroup - (group.length - 1) / 2) * 10;
+          displayOffset = Offset(points[i].offset.dx + offsetX, points[i].offset.dy);
+          pointRadius = isSelected ? 7 : 5; // 重叠的点稍微大一点
+          break;
+        }
+      }
+
+      canvas.drawCircle(displayOffset, pointRadius, pointPaint);
 
       // 选中时的外圈
       if (isSelected) {
         final outerPaint = Paint()
           ..color = AppTheme.highlightPoint.withValues(alpha: 0.3)
           ..style = PaintingStyle.fill;
-        canvas.drawCircle(points[i], 14, outerPaint);
+        canvas.drawCircle(displayOffset, 14, outerPaint);
       }
     }
   }
@@ -1583,7 +1632,7 @@ class _GrowthChartPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
-// 全屏图表内容组件
+// 全屏图表内容组件 - 支持拖动查看和5岁范围显示
 class _FullscreenChartContent extends StatefulWidget {
   final bool isHeight;
   final bool isPink;
@@ -1604,6 +1653,31 @@ class _FullscreenChartContent extends StatefulWidget {
 class _FullscreenChartContentState extends State<_FullscreenChartContent> {
   double? _selectedAge;
   int? _selectedRecordIndex;
+  
+  // 可视窗口范围 - 默认显示0-5岁
+  double _viewMinAge = 0.0;
+  double _viewMaxAge = 5.0;
+  
+  // 拖动相关
+  double _dragStartX = 0.0;
+  double _dragStartViewMinAge = 0.0;
+  
+  // 最大年龄范围
+  static const double _maxAge = 18.0;
+  static const double _minAge = 0.0;
+  static const double _viewRange = 5.0; // 可视范围5岁
+
+  @override
+  void initState() {
+    super.initState();
+    // 根据孩子的当前年龄初始化视图位置
+    if (widget.kid != null) {
+      final currentAge = widget.kid!.getAgeInYears(DateTime.now().toString().substring(0, 10));
+      // 将当前年龄放在可视区域中间
+      _viewMinAge = (currentAge - _viewRange / 2).clamp(_minAge, _maxAge - _viewRange);
+      _viewMaxAge = _viewMinAge + _viewRange;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1613,12 +1687,7 @@ class _FullscreenChartContentState extends State<_FullscreenChartContent> {
 
     final standards = StandardData.getStandards(widget.isPink ? 'girl' : 'boy', widget.isHeight);
 
-    // 全屏模式：显示0-18岁所有曲线
-    const minAge = 0.0;
-    const maxAge = 18.0;
-
     // 计算Y轴范围 - 基于所有年龄的国标值
-    // standards 的键是月份（0-216），需要遍历所有月份
     double rangeMinVal = double.infinity;
     double rangeMaxVal = double.negativeInfinity;
 
@@ -1634,9 +1703,8 @@ class _FullscreenChartContentState extends State<_FullscreenChartContent> {
     // 考虑所有记录值
     if (widget.records.isNotEmpty && widget.kid != null) {
       for (final record in widget.records) {
-        final ageMonths = widget.kid.getAgeInMonths(record.date);
-        final ageYears = ageMonths / 12;
-        if (ageYears >= minAge && ageYears <= maxAge) {
+        final ageYears = widget.kid.getAgeInYears(record.date);
+        if (ageYears >= _minAge && ageYears <= _maxAge) {
           final val = widget.isHeight ? record.height : record.weight;
           if (val < rangeMinVal) rangeMinVal = val;
           if (val > rangeMaxVal) rangeMaxVal = val;
@@ -1646,7 +1714,6 @@ class _FullscreenChartContentState extends State<_FullscreenChartContent> {
 
     // 添加边距
     final range = rangeMaxVal - rangeMinVal;
-    // 动态计算Y轴范围，不限制最小值，只限制最大值防止过大
     final minVal = widget.isHeight
         ? (rangeMinVal - range * 0.05).clamp(0.0, double.infinity)
         : (rangeMinVal - range * 0.05).clamp(0.0, double.infinity);
@@ -1654,369 +1721,401 @@ class _FullscreenChartContentState extends State<_FullscreenChartContent> {
         ? (rangeMaxVal + range * 0.05).clamp(0.0, 200.0)
         : (rangeMaxVal + range * 0.05).clamp(0.0, 100.0);
 
-    return Column(
+    return Row(
       children: [
-        // 图例
-        _buildLegend(widget.isHeight),
-        const SizedBox(height: 16),
-        // 图表
+        // 左侧图表区域 - 可拖动
         Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return GestureDetector(
-                onTapUp: (details) {
-                  _handleFullscreenTap(
-                    details.localPosition,
-                    constraints.maxWidth,
-                    constraints.maxHeight,
-                    minAge,
-                    maxAge,
-                    minVal,
-                    maxVal,
-                  );
-                },
-                child: CustomPaint(
-                  painter: _GrowthChartPainter(
-                    isHeight: widget.isHeight,
-                    isPink: widget.isPink,
-                    color: color,
-                    records: widget.records,
-                    kid: widget.kid,
-                    standards: standards,
-                    minAge: minAge,
-                    maxAge: maxAge,
-                    minVal: minVal,
-                    maxVal: maxVal,
-                    selectedAge: _selectedAge,
-                    selectedRecordIndex: _selectedRecordIndex,
-                    showAgeInfo: _selectedAge != null,
+          flex: 3,
+          child: Column(
+            children: [
+              // 图例
+              _buildLegend(widget.isHeight),
+              const SizedBox(height: 8),
+              // 年龄范围指示器
+              _buildAgeRangeIndicator(),
+              const SizedBox(height: 8),
+              // 图表 - 支持拖动
+              Expanded(
+                child: GestureDetector(
+                  onHorizontalDragStart: (details) {
+                    _dragStartX = details.localPosition.dx;
+                    _dragStartViewMinAge = _viewMinAge;
+                  },
+                  onHorizontalDragUpdate: (details) {
+                    final RenderBox box = context.findRenderObject() as RenderBox;
+                    final width = box.size.width * 3 / 4; // 左侧占3/4
+                    final dx = details.localPosition.dx - _dragStartX;
+                    final ageDelta = -(dx / width) * _viewRange;
+                    
+                    setState(() {
+                      _viewMinAge = (_dragStartViewMinAge + ageDelta).clamp(_minAge, _maxAge - _viewRange);
+                      _viewMaxAge = _viewMinAge + _viewRange;
+                    });
+                  },
+                  onTapUp: (details) {
+                    _handleTap(details.localPosition, minVal, maxVal);
+                  },
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return CustomPaint(
+                        painter: _FullscreenChartPainter(
+                          isHeight: widget.isHeight,
+                          isPink: widget.isPink,
+                          color: color,
+                          records: widget.records,
+                          kid: widget.kid,
+                          standards: standards,
+                          minAge: _viewMinAge,
+                          maxAge: _viewMaxAge,
+                          minVal: minVal,
+                          maxVal: maxVal,
+                          selectedAge: _selectedAge,
+                          selectedRecordIndex: _selectedRecordIndex,
+                        ),
+                        size: Size(constraints.maxWidth, constraints.maxHeight),
+                      );
+                    },
                   ),
-                  size: Size(constraints.maxWidth, constraints.maxHeight),
                 ),
-              );
-            },
+              ),
+              // 拖动提示
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.drag_indicator,
+                      size: 16,
+                      color: AppTheme.textLight.withValues(alpha: 0.5),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '左右拖动查看完整曲线',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.textLight.withValues(alpha: 0.5),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
-        // 选中信息
-        if (_selectedRecordIndex != null) ...[
-          const SizedBox(height: 16),
-          _buildFullscreenRecordInfo(standards),
-        ],
-        if (_selectedAge != null && _selectedRecordIndex == null) ...[
-          const SizedBox(height: 16),
-          _buildFullscreenAgeInfo(standards),
-        ],
+        const SizedBox(width: 16),
+        // 右侧信息面板
+        SizedBox(
+          width: 200,
+          child: _buildInfoPanel(minVal, maxVal),
+        ),
       ],
     );
   }
 
-  Widget _buildLegend(bool isHeight) {
-    final items = isHeight
-        ? [
-            {'label': '矮小', 'color': const Color(0xFFFFAB91)},
-            {'label': '偏矮', 'color': const Color(0xFFFFCC80)},
-            {'label': '正常', 'color': const Color(0xFFA5D6A7)},
-            {'label': '偏高', 'color': const Color(0xFF90CAF9)},
-            {'label': '超高', 'color': const Color(0xFF42A5F5)},
-          ]
-        : [
-            {'label': '均值', 'color': const Color(0xFFA5D6A7)},
-          ];
-
-    return Wrap(
-      spacing: 16,
-      runSpacing: 8,
-      alignment: WrapAlignment.center,
-      children: items.map((item) {
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 12,
-              height: 12,
-              decoration: BoxDecoration(
-                color: item['color'] as Color,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(width: 4),
-            Text(
-              item['label'] as String,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppTheme.textLight,
-              ),
-            ),
-          ],
-        );
-      }).toList(),
+  // 年龄范围指示器
+  Widget _buildAgeRangeIndicator() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppTheme.formBg,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        '显示范围: ${_viewMinAge.toStringAsFixed(1)}岁 - ${_viewMaxAge.toStringAsFixed(1)}岁',
+        style: TextStyle(
+          fontSize: 12,
+          color: AppTheme.textLight,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
     );
   }
 
-  void _handleFullscreenTap(
-    Offset position,
-    double chartWidth,
-    double chartHeight,
-    double minAge,
-    double maxAge,
-    double minVal,
-    double maxVal,
-  ) {
-    const paddingLeft = 50.0;
-    const paddingTop = 20.0;
-    const paddingRight = 20.0;
-    const paddingBottom = 40.0;
-    final drawWidth = chartWidth - paddingLeft - paddingRight;
-    final drawHeight = chartHeight - paddingTop - paddingBottom;
-
-    // 检查是否点击在图表区域内
-    if (position.dx < paddingLeft ||
-        position.dx > chartWidth - paddingRight ||
-        position.dy < paddingTop ||
-        position.dy > chartHeight - paddingBottom) {
-      // 点击在图表区域外，清除选择
-      setState(() {
-        _selectedAge = null;
-        _selectedRecordIndex = null;
-      });
-      return;
-    }
-
-    // 首先检查是否点击在数据点上
-    if (widget.records.isNotEmpty && widget.kid != null) {
-      int? closestIndex;
-      double? closestDistance;
-
-      for (int i = 0; i < widget.records.length; i++) {
-        final record = widget.records[i];
-        final ageMonths = widget.kid.getAgeInMonths(record.date);
-        final ageYears = ageMonths / 12;
-
-        if (ageYears >= minAge && ageYears <= maxAge) {
-          final x = paddingLeft + ((ageYears - minAge) / (maxAge - minAge)) * drawWidth;
-          final value = widget.isHeight ? record.height : record.weight;
-          final y = paddingTop + drawHeight - ((value - minVal) / (maxVal - minVal)) * drawHeight;
-
-          final dx = position.dx - x;
-          final dy = position.dy - y;
-          final distance = math.sqrt(dx * dx + dy * dy);
-
-          if (closestDistance == null || distance < closestDistance) {
-            closestDistance = distance;
-            closestIndex = i;
-          }
-        }
-      }
-
-      if (closestIndex != null && closestDistance != null && closestDistance < 30) {
-        // 如果点击的是已选中的点，则取消选中
-        if (_selectedRecordIndex == closestIndex) {
-          setState(() {
-            _selectedRecordIndex = null;
-          });
-        } else {
-          setState(() {
-            _selectedRecordIndex = closestIndex;
-            _selectedAge = null;
-          });
-        }
-        return;
-      }
-    }
-
-    // 检查是否点击在X轴标签附近（支持非整数岁）
-    final tapX = position.dx - paddingLeft;
-    final gender = widget.isPink ? 'girl' : 'boy';
-    
-    // 找到最接近点击位置的有效年龄
-    double? closestAge;
-    double? closestAgeDistance;
-    
-    // 获取所有有国标数据的月龄点
-    final standards = StandardData.getStandards(gender, widget.isHeight);
-    final availableMonths = standards.keys.where((m) => m >= minAge * 12 && m <= maxAge * 12).toList()..sort();
-    
-    // 遍历所有有国标数据的月龄点
-    for (final month in availableMonths) {
-      final age = month / 12.0;
-      final x = paddingLeft + ((age - minAge) / (maxAge - minAge)) * drawWidth;
-      final distance = (tapX - x).abs();
-      if (closestAgeDistance == null || distance < closestAgeDistance) {
-        closestAgeDistance = distance;
-        closestAge = age;
-      }
-    }
-    
-    // 如果最近的有效年龄点在范围内，选中它
-    if (closestAge != null && closestAgeDistance != null && closestAgeDistance < 30) {
-      // 如果点击的是已选中的年龄，则取消选中
-      if (_selectedAge == closestAge) {
-        setState(() {
-          _selectedAge = null;
-        });
-      } else {
-        setState(() {
-          _selectedAge = closestAge;
-          _selectedRecordIndex = null;
-        });
-      }
-      return;
-    }
-
-    // 点击空白处，清除选择
-    setState(() {
-      _selectedAge = null;
-      _selectedRecordIndex = null;
-    });
+  // 右侧信息面板
+  Widget _buildInfoPanel(double minVal, double maxVal) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 标题
+            Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  size: 18,
+                  color: widget.isPink ? AppTheme.pinkPrimary : AppTheme.bluePrimary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '数据详情',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textDark,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Divider(height: 1),
+            const SizedBox(height: 16),
+            // 选中记录信息
+            if (_selectedRecordIndex != null)
+              _buildRecordInfoPanel(minVal, maxVal)
+            else if (_selectedAge != null)
+              _buildAgeInfoPanel()
+            else
+              _buildEmptyInfoPanel(),
+          ],
+        ),
+      ),
+    );
   }
 
-  Widget _buildFullscreenRecordInfo(Map<int, Map<String, double>> standards) {
+  // 空状态信息面板
+  Widget _buildEmptyInfoPanel() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.touch_app,
+            size: 48,
+            color: AppTheme.textLight.withValues(alpha: 0.3),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '点击图表上的点\n查看详细信息',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: AppTheme.textLight.withValues(alpha: 0.6),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 记录信息面板
+  Widget _buildRecordInfoPanel(double minVal, double maxVal) {
     final index = _selectedRecordIndex!;
     if (index >= widget.records.length) return const SizedBox.shrink();
 
     final record = widget.records[index];
-    final ageMonths = widget.kid?.getAgeInMonths(record.date) ?? 0;
-    final ageYears = ageMonths / 12;
+    final ageYears = widget.kid?.getAgeInYears(record.date) ?? 0;
 
     final unit = widget.isHeight ? 'cm' : 'kg';
     final value = widget.isHeight ? record.height : record.weight;
 
-    // 使用插值计算国标值
     final gender = widget.isPink ? 'girl' : 'boy';
-    // 使用StandardData的评估方法，确保与成长状态一致
     final String evalResult;
     if (widget.isHeight) {
       evalResult = StandardData.evaluateHeight(value, ageYears, gender);
     } else {
-      // 体重使用BMI评估
       final bmi = record.weight / ((record.height / 100) * (record.height / 100));
       evalResult = StandardData.evaluateBmi(bmi, ageYears, gender);
     }
-    
-    final levels = widget.isHeight
-        ? ['sdMinus2', 'sdMinus1', 'median', 'sdPlus1', 'sdPlus2']
-        : ['normal'];
+
     final levelLabels = widget.isHeight
         ? {'sdMinus2': '矮小', 'sdMinus1': '偏矮', 'median': '正常', 'sdPlus1': '偏高', 'sdPlus2': '超高'}
         : {'normal': '均值'};
+
+    final levels = widget.isHeight
+        ? ['sdMinus2', 'sdMinus1', 'median', 'sdPlus1', 'sdPlus2']
+        : ['normal'];
 
     Map<String, double> interpolatedStandards = {};
     for (final level in levels) {
       interpolatedStandards[level] = StandardData.interpolate(ageYears, gender, isHeight: widget.isHeight, level: level);
     }
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 记录标签
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: (widget.isPink ? AppTheme.pinkPrimary : AppTheme.bluePrimary).withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.history,
-                size: 16,
-                color: widget.isPink ? AppTheme.pinkPrimary : AppTheme.bluePrimary,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '历史记录 - ${record.date}',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: widget.isPink ? AppTheme.pinkPrimary : AppTheme.bluePrimary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '${widget.isHeight ? '身高' : '体重'}: ${value.toStringAsFixed(1)}$unit ($evalResult)',
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: AppTheme.textDark,
+          child: Text(
+            '历史记录',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: widget.isPink ? AppTheme.pinkPrimary : AppTheme.bluePrimary,
             ),
           ),
-          const SizedBox(height: 8),
-          const Divider(),
-          const SizedBox(height: 8),
+        ),
+        const SizedBox(height: 12),
+        // 日期
+        Row(
+          children: [
+            Icon(Icons.calendar_today, size: 14, color: AppTheme.textLight),
+            const SizedBox(width: 6),
+            Text(
+              record.date,
+              style: TextStyle(fontSize: 13, color: AppTheme.textLight),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        // 年龄
+        Row(
+          children: [
+            Icon(Icons.cake, size: 14, color: AppTheme.textLight),
+            const SizedBox(width: 6),
+            Text(
+              formatAge(ageYears),
+              style: TextStyle(fontSize: 13, color: AppTheme.textLight),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        const Divider(height: 1),
+        const SizedBox(height: 16),
+        // 数值
+        Text(
+          widget.isHeight ? '身高' : '体重',
+          style: TextStyle(
+            fontSize: 13,
+            color: AppTheme.textLight,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '${value.toStringAsFixed(1)}$unit',
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.w700,
+            color: widget.isPink ? AppTheme.pinkPrimary : AppTheme.bluePrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        // 评估结果
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: (widget.isPink ? AppTheme.pinkPrimary : AppTheme.bluePrimary).withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: (widget.isPink ? AppTheme.pinkPrimary : AppTheme.bluePrimary).withValues(alpha: 0.3),
+            ),
+          ),
+          child: Text(
+            evalResult,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: widget.isPink ? AppTheme.pinkPrimary : AppTheme.bluePrimary,
+            ),
+          ),
+        ),
+        if (!widget.isHeight) ...[
+          const SizedBox(height: 16),
+          const Divider(height: 1),
+          const SizedBox(height: 16),
           Text(
-            '该年龄(${formatAge(ageYears)})国标参考值：',
+            'BMI',
             style: TextStyle(
               fontSize: 13,
-              color: AppTheme.textLight.withValues(alpha: 0.8),
+              color: AppTheme.textLight,
             ),
           ),
-          const SizedBox(height: 8),
-          Wrap(
-              spacing: 12,
-              runSpacing: 8,
-              children: interpolatedStandards.entries.map((entry) {
-                // 根据中文评估结果匹配对应的key
-                String? matchedKey;
-                levelLabels.forEach((key, value) {
-                  if (value == evalResult) {
-                    matchedKey = key;
-                  }
-                });
-                final isHighlighted = entry.key == matchedKey;
-                final colors = {
-                  'sdMinus2': const Color(0xFFFFAB91),
-                  'sdMinus1': const Color(0xFFFFCC80),
-                  'median': const Color(0xFFA5D6A7),
-                  'sdPlus1': const Color(0xFF90CAF9),
-                  'sdPlus2': const Color(0xFF42A5F5),
-                  'thin': const Color(0xFFFFAB91),
-                  'normal': const Color(0xFFA5D6A7),
-                  'heavy': const Color(0xFFFFCC80),
-                  'obese': const Color(0xFF90CAF9),
-                };
-                final color = colors[entry.key] ?? AppTheme.textLight;
-
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: isHighlighted ? color.withValues(alpha: 0.2) : AppTheme.formBg,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: isHighlighted ? color : AppTheme.formBorder,
-                      width: isHighlighted ? 2 : 1,
-                    ),
-                  ),
-                  child: Text(
-                    '${levelLabels[entry.key]}: ${entry.value.toStringAsFixed(1)}$unit',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: isHighlighted ? FontWeight.w600 : FontWeight.w400,
-                      color: isHighlighted ? AppTheme.textDark : AppTheme.textLight,
-                    ),
-                  ),
-                );
-              }).toList(),
+          const SizedBox(height: 4),
+          Text(
+            (record.weight / ((record.height / 100) * (record.height / 100))).toStringAsFixed(1),
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.weightColor,
             ),
+          ),
         ],
-      ),
+        const SizedBox(height: 16),
+        const Divider(height: 1),
+        const SizedBox(height: 16),
+        // 国标参考值
+        Text(
+          '国标参考值',
+          style: TextStyle(
+            fontSize: 13,
+            color: AppTheme.textLight,
+          ),
+        ),
+        const SizedBox(height: 8),
+        ...interpolatedStandards.entries.map((entry) {
+          final colors = {
+            'sdMinus2': const Color(0xFFFFAB91),
+            'sdMinus1': const Color(0xFFFFCC80),
+            'median': const Color(0xFFA5D6A7),
+            'sdPlus1': const Color(0xFF90CAF9),
+            'sdPlus2': const Color(0xFF42A5F5),
+            'normal': const Color(0xFFA5D6A7),
+          };
+          final color = colors[entry.key] ?? AppTheme.textLight;
+          final isHighlighted = entry.key == _getMatchedKey(evalResult, levelLabels);
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: isHighlighted ? color.withValues(alpha: 0.15) : AppTheme.formBg,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: isHighlighted ? color : AppTheme.formBorder,
+                width: isHighlighted ? 2 : 1,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  levelLabels[entry.key] ?? entry.key,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isHighlighted ? AppTheme.textDark : AppTheme.textLight,
+                    fontWeight: isHighlighted ? FontWeight.w600 : FontWeight.w400,
+                  ),
+                ),
+                Text(
+                  '${entry.value.toStringAsFixed(1)}$unit',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: isHighlighted ? FontWeight.w700 : FontWeight.w500,
+                    color: isHighlighted ? AppTheme.textDark : AppTheme.textLight,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ],
     );
   }
 
-  Widget _buildFullscreenAgeInfo(Map<int, Map<String, double>> standards) {
+  // 年龄信息面板
+  Widget _buildAgeInfoPanel() {
     final age = _selectedAge!;
     final gender = widget.isPink ? 'girl' : 'boy';
     final unit = widget.isHeight ? 'cm' : 'kg';
 
-    // 使用插值获取非整数岁的国标数据（与非全屏模式保持一致）
     Map<String, double> standardValues = {};
     if (widget.isHeight) {
       for (final level in ['sdMinus2', 'sdMinus1', 'median', 'sdPlus1', 'sdPlus2']) {
@@ -2034,85 +2133,518 @@ class _FullscreenChartContentState extends State<_FullscreenChartContent> {
 
     final levelLabels = widget.isHeight
         ? {'sdMinus2': '矮小', 'sdMinus1': '偏矮', 'median': '正常', 'sdPlus1': '偏高', 'sdPlus2': '超高'}
-        : {'thin': '偏瘦', 'normal': '标准', 'heavy': '超重', 'obese': '肥胖'};
+        : {'normal': '均值'};
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 年龄标签
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: (widget.isPink ? AppTheme.pinkPrimary : AppTheme.bluePrimary).withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: widget.isPink ? AppTheme.pinkPrimary : AppTheme.bluePrimary,
-                  borderRadius: BorderRadius.circular(5),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '${formatAge(age)} 国标参考值',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.textDark,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          if (standardValues.isNotEmpty)
-            Wrap(
-              spacing: 12,
-              runSpacing: 8,
-              children: standardValues.entries.map((entry) {
-                final colors = {
-                  'sdMinus2': const Color(0xFFFFAB91),
-                  'sdMinus1': const Color(0xFFFFCC80),
-                  'median': const Color(0xFFA5D6A7),
-                  'sdPlus1': const Color(0xFF90CAF9),
-                  'sdPlus2': const Color(0xFF42A5F5),
-                  'thin': const Color(0xFFFFAB91),
-                  'normal': const Color(0xFFA5D6A7),
-                  'heavy': const Color(0xFFFFCC80),
-                  'obese': const Color(0xFF90CAF9),
-                };
-                final color = colors[entry.key] ?? AppTheme.textLight;
-
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: color.withValues(alpha: 0.5)),
-                  ),
-                  child: Text(
-                    '${levelLabels[entry.key]}: ${entry.value.toStringAsFixed(1)}$unit',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textDark,
-                    ),
-                  ),
-                );
-              }).toList(),
+          child: Text(
+            formatAge(age),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: widget.isPink ? AppTheme.pinkPrimary : AppTheme.bluePrimary,
             ),
-        ],
-      ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        const Divider(height: 1),
+        const SizedBox(height: 16),
+        // 国标参考值
+        Text(
+          '国标参考值',
+          style: TextStyle(
+            fontSize: 13,
+            color: AppTheme.textLight,
+          ),
+        ),
+        const SizedBox(height: 8),
+        ...standardValues.entries.map((entry) {
+          final colors = {
+            'sdMinus2': const Color(0xFFFFAB91),
+            'sdMinus1': const Color(0xFFFFCC80),
+            'median': const Color(0xFFA5D6A7),
+            'sdPlus1': const Color(0xFF90CAF9),
+            'sdPlus2': const Color(0xFF42A5F5),
+            'normal': const Color(0xFFA5D6A7),
+          };
+          final color = colors[entry.key] ?? AppTheme.textLight;
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: color.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  levelLabels[entry.key] ?? entry.key,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.textDark,
+                  ),
+                ),
+                Text(
+                  '${entry.value.toStringAsFixed(1)}$unit',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textDark,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ],
     );
   }
+
+  String? _getMatchedKey(String evalResult, Map<String, String> levelLabels) {
+    String? matchedKey;
+    levelLabels.forEach((key, value) {
+      if (value == evalResult) {
+        matchedKey = key;
+      }
+    });
+    return matchedKey;
+  }
+
+  Widget _buildLegend(bool isHeight) {
+    final items = isHeight
+        ? [
+            {'label': '矮小', 'color': const Color(0xFFFFAB91)},
+            {'label': '偏矮', 'color': const Color(0xFFFFCC80)},
+            {'label': '正常', 'color': const Color(0xFFA5D6A7)},
+            {'label': '偏高', 'color': const Color(0xFF90CAF9)},
+            {'label': '超高', 'color': const Color(0xFF42A5F5)},
+          ]
+        : [
+            {'label': '均值', 'color': const Color(0xFFA5D6A7)},
+          ];
+
+    return Wrap(
+      spacing: 12,
+      runSpacing: 6,
+      alignment: WrapAlignment.center,
+      children: items.map((item) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                color: item['color'] as Color,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              item['label'] as String,
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppTheme.textLight,
+              ),
+            ),
+          ],
+        );
+      }).toList(),
+    );
+  }
+
+  void _handleTap(Offset position, double minVal, double maxVal) {
+    const paddingLeft = 50.0;
+    const paddingTop = 20.0;
+    const paddingRight = 20.0;
+    const paddingBottom = 40.0;
+    
+    // 获取图表区域大小
+    final RenderBox box = context.findRenderObject() as RenderBox;
+    final chartWidth = box.size.width * 3 / 4; // 左侧占3/4
+    final chartHeight = box.size.height;
+    
+    final drawWidth = chartWidth - paddingLeft - paddingRight;
+    final drawHeight = chartHeight - paddingTop - paddingBottom;
+
+    // 检查是否点击在图表区域内
+    if (position.dx < paddingLeft ||
+        position.dx > chartWidth - paddingRight ||
+        position.dy < paddingTop ||
+        position.dy > chartHeight - paddingBottom) {
+      setState(() {
+        _selectedAge = null;
+        _selectedRecordIndex = null;
+      });
+      return;
+    }
+
+    // 首先检查是否点击在数据点上
+    if (widget.records.isNotEmpty && widget.kid != null) {
+      int? closestIndex;
+      double? closestDistance;
+
+      for (int i = 0; i < widget.records.length; i++) {
+        final record = widget.records[i];
+        final ageYears = widget.kid.getAgeInYears(record.date);
+
+        if (ageYears >= _viewMinAge && ageYears <= _viewMaxAge) {
+          final x = paddingLeft + ((ageYears - _viewMinAge) / (_viewMaxAge - _viewMinAge)) * drawWidth;
+          final value = widget.isHeight ? record.height : record.weight;
+          final y = paddingTop + drawHeight - ((value - minVal) / (maxVal - minVal)) * drawHeight;
+
+          final dx = position.dx - x;
+          final dy = position.dy - y;
+          final distance = math.sqrt(dx * dx + dy * dy);
+
+          if (closestDistance == null || distance < closestDistance) {
+            closestDistance = distance;
+            closestIndex = i;
+          }
+        }
+      }
+
+      if (closestIndex != null && closestDistance != null && closestDistance < 30) {
+        setState(() {
+          if (_selectedRecordIndex == closestIndex) {
+            _selectedRecordIndex = null;
+          } else {
+            _selectedRecordIndex = closestIndex;
+            _selectedAge = null;
+          }
+        });
+        return;
+      }
+    }
+
+    // 检查是否点击在X轴标签附近
+    final tapX = position.dx - paddingLeft;
+    final standards = StandardData.getStandards(widget.isPink ? 'girl' : 'boy', widget.isHeight);
+    final availableMonths = standards.keys.where((m) => m >= _viewMinAge * 12 && m <= _viewMaxAge * 12).toList()..sort();
+
+    double? closestAge;
+    double? closestAgeDistance;
+
+    for (final month in availableMonths) {
+      final age = month / 12.0;
+      final x = paddingLeft + ((age - _viewMinAge) / (_viewMaxAge - _viewMinAge)) * drawWidth;
+      final distance = (tapX - x).abs();
+      if (closestAgeDistance == null || distance < closestAgeDistance) {
+        closestAgeDistance = distance;
+        closestAge = age;
+      }
+    }
+
+    if (closestAge != null && closestAgeDistance != null && closestAgeDistance < 30) {
+      setState(() {
+        if (_selectedAge == closestAge) {
+          _selectedAge = null;
+        } else {
+          _selectedAge = closestAge;
+          _selectedRecordIndex = null;
+        }
+      });
+      return;
+    }
+
+    // 点击空白处，清除选择
+    setState(() {
+      _selectedAge = null;
+      _selectedRecordIndex = null;
+    });
+  }
+}
+
+// 全屏图表绘制器 - 支持可视窗口范围
+class _FullscreenChartPainter extends CustomPainter {
+  final bool isHeight;
+  final bool isPink;
+  final Color color;
+  final List<dynamic> records;
+  final dynamic kid;
+  final Map<int, Map<String, double>> standards;
+  final double minAge;
+  final double maxAge;
+  final double minVal;
+  final double maxVal;
+  final double? selectedAge;
+  final int? selectedRecordIndex;
+
+  _FullscreenChartPainter({
+    required this.isHeight,
+    required this.isPink,
+    required this.color,
+    required this.records,
+    required this.kid,
+    required this.standards,
+    required this.minAge,
+    required this.maxAge,
+    required this.minVal,
+    required this.maxVal,
+    this.selectedAge,
+    this.selectedRecordIndex,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final padding = const EdgeInsets.only(left: 50, top: 20, right: 20, bottom: 40);
+    final chartWidth = size.width - padding.left - padding.right;
+    final chartHeight = size.height - padding.top - padding.bottom;
+
+    // 绘制网格线和标签
+    _drawGrid(canvas, padding, chartWidth, chartHeight, size);
+
+    // 绘制国标曲线
+    _drawStandardCurves(canvas, padding, chartWidth, chartHeight);
+
+    // 绘制用户数据
+    _drawUserData(canvas, padding, chartWidth, chartHeight);
+
+    // 绘制X轴标签
+    _drawXAxisLabels(canvas, padding, chartWidth, chartHeight, size);
+
+    // 绘制选中标记
+    _drawSelection(canvas, padding, chartWidth, chartHeight);
+  }
+
+  void _drawGrid(Canvas canvas, EdgeInsets padding, double chartWidth, double chartHeight, Size size) {
+    final gridPaint = Paint()
+      ..color = AppTheme.chartGrid
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+
+    final textPainter = TextPainter(textDirection: TextDirection.ltr);
+
+    // 绘制水平网格线和Y轴标签
+    for (int i = 0; i <= 5; i++) {
+      final y = padding.top + (i / 5) * chartHeight;
+      final val = maxVal - (i / 5) * (maxVal - minVal);
+
+      canvas.drawLine(
+        Offset(padding.left, y),
+        Offset(size.width - padding.right, y),
+        gridPaint,
+      );
+
+      textPainter.text = TextSpan(
+        text: val.round().toString(),
+        style: const TextStyle(fontSize: 11, color: AppTheme.chartYLabel),
+      );
+      textPainter.layout();
+      textPainter.paint(canvas, Offset(5, y - 6));
+    }
+  }
+
+  void _drawStandardCurves(Canvas canvas, EdgeInsets padding, double chartWidth, double chartHeight) {
+    final colors = isHeight
+        ? [
+            const Color(0xFFFFAB91),
+            const Color(0xFFFFCC80),
+            const Color(0xFFA5D6A7),
+            const Color(0xFF90CAF9),
+            const Color(0xFF42A5F5),
+          ]
+        : [const Color(0xFFA5D6A7)];
+
+    final gender = isPink ? 'girl' : 'boy';
+    final step = 0.05;
+    final levels = isHeight
+        ? ['sdMinus2', 'sdMinus1', 'median', 'sdPlus1', 'sdPlus2']
+        : ['normal'];
+
+    for (int j = 0; j < levels.length; j++) {
+      final paint = Paint()
+        ..color = colors[j]
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.5;
+
+      final path = Path();
+      bool firstPoint = true;
+
+      for (double age = minAge; age <= maxAge; age += step) {
+        double val;
+        if (isHeight) {
+          val = StandardData.interpolate(age, gender, isHeight: true, level: levels[j]);
+        } else {
+          val = StandardData.getWeightStandard(age, gender);
+        }
+
+        if (val <= 0) continue;
+
+        final x = padding.left + ((age - minAge) / (maxAge - minAge)) * chartWidth;
+        double normalizedY = ((val - minVal) / (maxVal - minVal));
+        normalizedY = normalizedY.clamp(0.0, 1.0);
+        final y = padding.top + chartHeight - normalizedY * chartHeight;
+
+        if (firstPoint) {
+          path.moveTo(x, y);
+          firstPoint = false;
+        } else {
+          path.lineTo(x, y);
+        }
+      }
+
+      canvas.drawPath(path, paint);
+    }
+  }
+
+  void _drawUserData(Canvas canvas, EdgeInsets padding, double chartWidth, double chartHeight) {
+    if (records.isEmpty || kid == null) return;
+
+    final path = Path();
+    // 存储点和对应的原始记录索引
+    final points = <_ChartPoint>[];
+
+    for (int i = 0; i < records.length; i++) {
+      final record = records[i];
+      final ageYears = kid.getAgeInYears(record.date);
+
+      if (ageYears >= minAge && ageYears <= maxAge) {
+        final x = padding.left + ((ageYears - minAge) / (maxAge - minAge)) * chartWidth;
+        double normalizedY = (((isHeight ? record.height : record.weight) - minVal) / (maxVal - minVal));
+        normalizedY = normalizedY.clamp(0.0, 1.0);
+        final y = padding.top + chartHeight - normalizedY * chartHeight;
+        points.add(_ChartPoint(offset: Offset(x, y), recordIndex: i));
+      }
+    }
+
+    if (points.isEmpty) return;
+
+    final linePaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    path.moveTo(points.first.offset.dx, points.first.offset.dy);
+    for (int i = 1; i < points.length; i++) {
+      path.lineTo(points[i].offset.dx, points[i].offset.dy);
+    }
+
+    canvas.drawPath(path, linePaint);
+
+    // 检测是否有重叠的点（年龄非常接近）
+    final overlappingGroups = <List<int>>[];
+    final processed = <int>{};
+    
+    for (int i = 0; i < points.length; i++) {
+      if (processed.contains(i)) continue;
+      
+      final group = [i];
+      processed.add(i);
+      
+      for (int j = i + 1; j < points.length; j++) {
+        if (processed.contains(j)) continue;
+        
+        // 计算两点之间的距离（像素）
+        final dx = points[i].offset.dx - points[j].offset.dx;
+        final dy = points[i].offset.dy - points[j].offset.dy;
+        final distance = math.sqrt(dx * dx + dy * dy);
+        
+        // 如果距离小于8像素，认为是重叠的点
+        if (distance < 8) {
+          group.add(j);
+          processed.add(j);
+        }
+      }
+      
+      if (group.length > 1) {
+        overlappingGroups.add(group);
+      }
+    }
+
+    // 绘制数据点
+    for (int i = 0; i < points.length; i++) {
+      final isSelected = selectedRecordIndex == points[i].recordIndex;
+      final pointPaint = Paint()
+        ..color = isSelected ? AppTheme.highlightPoint : color
+        ..style = PaintingStyle.fill;
+
+      // 检查这个点是否在重叠组中
+      Offset displayOffset = points[i].offset;
+      double pointRadius = isSelected ? 8 : 5;
+      
+      for (final group in overlappingGroups) {
+        final indexInGroup = group.indexOf(i);
+        if (indexInGroup != -1) {
+          // 在重叠组中，错开显示
+          // 根据在组中的位置，稍微偏移
+          final offsetX = (indexInGroup - (group.length - 1) / 2) * 12;
+          displayOffset = Offset(points[i].offset.dx + offsetX, points[i].offset.dy);
+          pointRadius = isSelected ? 9 : 6; // 重叠的点稍微大一点
+          break;
+        }
+      }
+
+      canvas.drawCircle(displayOffset, pointRadius, pointPaint);
+
+      if (isSelected) {
+        final outerPaint = Paint()
+          ..color = AppTheme.highlightPoint.withValues(alpha: 0.3)
+          ..style = PaintingStyle.fill;
+        canvas.drawCircle(displayOffset, 18, outerPaint);
+      }
+    }
+  }
+
+  void _drawXAxisLabels(Canvas canvas, EdgeInsets padding, double chartWidth, double chartHeight, Size size) {
+    final textPainter = TextPainter(textDirection: TextDirection.ltr);
+
+    // 每1岁一个标签
+    for (int age = minAge.ceil(); age <= maxAge.floor(); age++) {
+      final x = padding.left + ((age - minAge) / (maxAge - minAge)) * chartWidth;
+      final isSelected = selectedAge != null && (selectedAge! * 12).round() == age * 12;
+
+      if (isSelected) {
+        final bgPaint = Paint()
+          ..color = AppTheme.highlightPoint.withValues(alpha: 0.2)
+          ..style = PaintingStyle.fill;
+        canvas.drawCircle(Offset(x, size.height - 25), 18, bgPaint);
+      }
+
+      textPainter.text = TextSpan(
+        text: '${age}岁',
+        style: TextStyle(
+          fontSize: isSelected ? 13 : 11,
+          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
+          color: isSelected ? AppTheme.textDark : AppTheme.chartXLabel,
+        ),
+      );
+      textPainter.layout();
+      textPainter.paint(canvas, Offset(x - textPainter.width / 2, size.height - 30));
+    }
+  }
+
+  void _drawSelection(Canvas canvas, EdgeInsets padding, double chartWidth, double chartHeight) {
+    if (selectedAge != null && selectedAge! >= minAge && selectedAge! <= maxAge) {
+      final x = padding.left + ((selectedAge! - minAge) / (maxAge - minAge)) * chartWidth;
+
+      final linePaint = Paint()
+        ..color = AppTheme.highlightPoint.withValues(alpha: 0.6)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..strokeCap = StrokeCap.round;
+
+      canvas.drawLine(
+        Offset(x, padding.top),
+        Offset(x, padding.top + chartHeight),
+        linePaint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

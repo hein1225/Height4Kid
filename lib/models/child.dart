@@ -120,4 +120,16 @@ class Child {
     }
     return months.clamp(0, 216);
   }
+
+  /// 获取精确的年龄（以年为单位，包含小数，精确到天）
+  double getAgeInYears(String recordDate) {
+    final birth = DateTime.parse(birthday);
+    final record = DateTime.parse(recordDate);
+    
+    // 计算总天数差
+    final daysDiff = record.difference(birth).inDays;
+    
+    // 转换为年（使用365.25天/年，考虑闰年）
+    return daysDiff / 365.25;
+  }
 }

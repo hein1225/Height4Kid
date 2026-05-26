@@ -8,12 +8,38 @@ import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+/// 更新渠道类型
+enum UpdateChannel {
+  gitcode, // 国内渠道
+  github,  // GitHub渠道
+}
+
+/// 更新渠道信息
+class UpdateChannelInfo {
+  final UpdateChannel channel;
+  final String name;
+  final String apiUrl;
+  final String releasePageUrl;
+  final String starUrl;
+  final String description;
+
+  const UpdateChannelInfo({
+    required this.channel,
+    required this.name,
+    required this.apiUrl,
+    required this.releasePageUrl,
+    required this.starUrl,
+    required this.description,
+  });
+}
+
 class UpdateInfo {
   final String version;
   final String downloadUrl;
   final String? apkDownloadUrl;
   final String releaseNotes;
   final bool hasUpdate;
+  final UpdateChannel channel;
 
   UpdateInfo({
     required this.version,
@@ -21,18 +47,71 @@ class UpdateInfo {
     this.apkDownloadUrl,
     required this.releaseNotes,
     required this.hasUpdate,
+    required this.channel,
   });
 }
 
 class UpdateChecker {
-  static const String _currentVersion = '1.0.2';
-  static const String _githubApiUrl = 'https://api.github.com/repos/hein1225/Height4Kid/releases/latest';
+  static const String _currentVersion = '1.0.3';
   static const String _lastCheckKey = 'last_update_check';
   static const String _skippedVersionKey = 'skipped_update_version';
 
+  // 国内渠道 - GitCode
+  static const String _gitcodeApiUrl = 'https://gitcode.com/api/v5/repos/gcw_QbmhmbO8/Height4Kid/releases/latest';
+  static const String _gitcodeReleasePageUrl = 'https://gitcode.com/gcw_QbmhmbO8/Height4Kid/releases/';
+  static const String _gitcodeStarUrl = 'https://gitcode.com/gcw_QbmhmbO8/Height4Kid';
+
+  // GitHub渠道
+  static const String _githubApiUrl = 'https://api.github.com/repos/hein1225/Height4Kid/releases/latest';
+  static const String _githubReleasePageUrl = 'https://github.com/hein1225/Height4Kid/releases/';
+  static const String _githubStarUrl = 'https://github.com/hein1225/Height4Kid';
+
   static String get currentVersion => _currentVersion;
 
-  /// 检查更新
+  /// 获取所有更新渠道信息
+  static List<UpdateChannelInfo> get updateChannels => [
+    const UpdateChannelInfo(
+      channel: UpdateChannel.gitcode,
+      name: '国内渠道 (GitCode)',
+      apiUrl: _gitcodeApiUrl,
+      releasePageUrl: _gitcodeReleasePageUrl,
+      starUrl: _gitcodeStarUrl,
+      description: '国内访问速度快，推荐国内用户使用',
+    ),
+    const UpdateChannelInfo(
+      channel: UpdateChannel.github,
+      name: 'GitHub渠道',
+      apiUrl: _githubApiUrl,
+      releasePageUrl: _githubReleasePageUrl,
+      starUrl: _githubStarUrl,
+      description: '国际访问，适合海外用户',
+    ),
+  ];
+
+  /// 检查所有渠道的更新
+  /// [force] 为 true 时忽略时间间隔强制检查
+  static Future<Map<UpdateChannel, UpdateInfo?>> checkAllChannels({bool force = false}) async {
+    final results = <UpdateChannel, UpdateInfo?>{};
+
+    // 如果不是强制检查，检查是否需要检查（每天一次）
+    if (!force) {
+      final shouldCheck = await _shouldCheckUpdate();
+      if (!shouldCheck) return results;
+    }
+
+    // 记录检查时间
+    await _recordCheckTime();
+
+    // 检查国内渠道（GitCode）
+    results[UpdateChannel.gitcode] = await checkGitCodeUpdate();
+
+    // 检查GitHub渠道
+    results[UpdateChannel.github] = await checkGitHubUpdate();
+
+    return results;
+  }
+
+  /// 检查更新（默认优先检查国内渠道）
   /// [force] 为 true 时忽略时间间隔强制检查
   static Future<UpdateInfo?> checkUpdate({bool force = false}) async {
     try {
@@ -45,13 +124,125 @@ class UpdateChecker {
       // 记录检查时间
       await _recordCheckTime();
 
-      // 调用 GitHub API 获取最新 release
+      // 优先检查国内渠道（GitCode）
+      UpdateInfo? updateInfo = await checkGitCodeUpdate();
+
+      // 如果国内渠道检查失败或没有更新，检查GitHub渠道
+      if (updateInfo == null || !updateInfo.hasUpdate) {
+        final githubUpdate = await checkGitHubUpdate();
+        if (githubUpdate != null && githubUpdate.hasUpdate) {
+          updateInfo = githubUpdate;
+        }
+      }
+
+      return updateInfo;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// 检查 GitCode 国内渠道更新
+  static Future<UpdateInfo?> checkGitCodeUpdate() async {
+    try {
+      // Web 环境有 CORS 限制，直接返回模拟数据用于测试
+      if (kIsWeb) {
+        debugPrint('Web环境：模拟GitCode更新检查');
+        return _getMockUpdateInfo(UpdateChannel.gitcode);
+      }
+
+      final response = await http.get(
+        Uri.parse(_gitcodeApiUrl),
+        headers: {
+          'Accept': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode != 200) {
+        debugPrint('GitCode API 请求失败: ${response.statusCode}');
+        return null;
+      }
+
+      final data = jsonDecode(response.body);
+      
+      // GitCode 的 tag_name 可能没有 v 前缀
+      final tagName = data['tag_name'] as String;
+      final latestVersion = tagName.startsWith('v') ? tagName.substring(1) : tagName;
+      
+      // GitCode API 没有 html_url，需要手动构建
+      final downloadUrl = '$_gitcodeReleasePageUrl$tagName';
+      final releaseNotes = data['body'] as String? ?? '';
+
+      // 查找APK下载链接
+      String? apkDownloadUrl;
+      final assets = data['assets'] as List<dynamic>?;
+      if (assets != null) {
+        for (final asset in assets) {
+          final name = asset['name'] as String;
+          if (name.endsWith('.apk')) {
+            apkDownloadUrl = asset['browser_download_url'] as String;
+            break;
+          }
+        }
+      }
+
+      // 比较版本号
+      final hasUpdate = _compareVersions(latestVersion, _currentVersion) > 0;
+
+      // 检查用户是否跳过了这个版本
+      final bool shouldShowUpdate;
+      if (hasUpdate) {
+        final skippedVersion = await _getSkippedVersion();
+        shouldShowUpdate = skippedVersion != latestVersion;
+      } else {
+        shouldShowUpdate = false;
+      }
+
+      return UpdateInfo(
+        version: latestVersion,
+        downloadUrl: downloadUrl,
+        apkDownloadUrl: apkDownloadUrl,
+        releaseNotes: releaseNotes,
+        hasUpdate: hasUpdate && shouldShowUpdate,
+        channel: UpdateChannel.gitcode,
+      );
+    } catch (e) {
+      debugPrint('GitCode 检查更新失败: $e');
+      // Web环境返回模拟数据，Android环境返回null
+      if (kIsWeb) {
+        return _getMockUpdateInfo(UpdateChannel.gitcode);
+      }
+      return null;
+    }
+  }
+
+  /// 获取模拟更新信息（用于Web测试）
+  static UpdateInfo _getMockUpdateInfo(UpdateChannel channel) {
+    final isGitCode = channel == UpdateChannel.gitcode;
+    return UpdateInfo(
+      version: '1.0.3',
+      downloadUrl: isGitCode ? _gitcodeReleasePageUrl : _githubReleasePageUrl,
+      apkDownloadUrl: null,
+      releaseNotes: 'Web环境模拟数据\n\n在真实Android设备上可以正常检查更新',
+      hasUpdate: false, // 模拟没有更新
+      channel: channel,
+    );
+  }
+
+  /// 检查 GitHub 渠道更新
+  static Future<UpdateInfo?> checkGitHubUpdate() async {
+    try {
+      // Web 环境有 CORS 限制，直接返回模拟数据用于测试
+      if (kIsWeb) {
+        debugPrint('Web环境：模拟GitHub更新检查');
+        return _getMockUpdateInfo(UpdateChannel.github);
+      }
+
       final response = await http.get(
         Uri.parse(_githubApiUrl),
         headers: {
           'Accept': 'application/vnd.github.v3+json',
         },
-      );
+      ).timeout(const Duration(seconds: 15));
 
       if (response.statusCode != 200) {
         return null;
@@ -79,17 +270,12 @@ class UpdateChecker {
       final hasUpdate = _compareVersions(latestVersion, _currentVersion) > 0;
 
       // 检查用户是否跳过了这个版本
+      final bool shouldShowUpdate;
       if (hasUpdate) {
         final skippedVersion = await _getSkippedVersion();
-        if (skippedVersion == latestVersion) {
-          return UpdateInfo(
-            version: latestVersion,
-            downloadUrl: downloadUrl,
-            apkDownloadUrl: apkDownloadUrl,
-            releaseNotes: releaseNotes,
-            hasUpdate: false,
-          );
-        }
+        shouldShowUpdate = skippedVersion != latestVersion;
+      } else {
+        shouldShowUpdate = false;
       }
 
       return UpdateInfo(
@@ -97,9 +283,14 @@ class UpdateChecker {
         downloadUrl: downloadUrl,
         apkDownloadUrl: apkDownloadUrl,
         releaseNotes: releaseNotes,
-        hasUpdate: hasUpdate,
+        hasUpdate: hasUpdate && shouldShowUpdate,
+        channel: UpdateChannel.github,
       );
     } catch (e) {
+      // Web环境返回模拟数据，其他环境返回null
+      if (kIsWeb) {
+        return _getMockUpdateInfo(UpdateChannel.github);
+      }
       return null;
     }
   }

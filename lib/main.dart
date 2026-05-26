@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'providers/app_provider.dart';
@@ -16,6 +17,18 @@ import 'utils/update_checker.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // 设置沉浸式状态栏
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.dark,
+    systemNavigationBarColor: Colors.transparent,
+    systemNavigationBarIconBrightness: Brightness.dark,
+  ));
+  
+  // 设置全屏显示（沉浸式）
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  
   runApp(const HeightKidApp());
 }
 
@@ -161,7 +174,8 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Future<void> _checkUpdate() async {
-    final updateInfo = await UpdateChecker.checkUpdate();
+    // 应用启动时只使用国内渠道检查更新
+    final updateInfo = await UpdateChecker.checkGitCodeUpdate();
     if (updateInfo != null && updateInfo.hasUpdate && mounted) {
       _showUpdateDialog(updateInfo);
     }

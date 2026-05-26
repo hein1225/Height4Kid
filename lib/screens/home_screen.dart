@@ -130,8 +130,11 @@ class HomeScreen extends StatelessWidget {
                     // Chart Section
                     Padding(
                       padding: const EdgeInsets.all(24),
-                      child: GrowthChart(
-                        onTapFullscreen: () => appProvider.toggleFullscreenChart(),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: GrowthChart(
+                          onTapFullscreen: () => appProvider.toggleFullscreenChart(),
+                        ),
                       ),
                     ),
                   ],

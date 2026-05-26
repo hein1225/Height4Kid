@@ -111,9 +111,15 @@ class CharacterDisplay extends StatelessWidget {
                       return _buildFallbackCharacter(isPink);
                     },
                     frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-                      if (frame == null) {
-                        return _buildFallbackCharacter(isPink);
+                      // 如果图片已经同步加载完成，直接显示
+                      if (wasSynchronouslyLoaded) {
+                        return child;
                       }
+                      // 如果正在加载中（frame为null），显示加载占位符
+                      if (frame == null) {
+                        return _buildLoadingCharacter(isPink);
+                      }
+                      // 加载完成，显示图片
                       return child;
                     },
                   ),
@@ -131,7 +137,7 @@ class CharacterDisplay extends StatelessWidget {
                   evalResult: latestRecord != null && kid != null
                       ? StandardData.evaluateHeight(
                           latestRecord.height,
-                          kid.getAgeInMonths(latestRecord.date) / 12,
+                          kid.getAgeInYears(latestRecord.date),
                           isPink ? 'girl' : 'boy',
                         )
                       : null,
@@ -160,7 +166,7 @@ class CharacterDisplay extends StatelessWidget {
                   evalResult: latestRecord != null && kid != null
                       ? StandardData.evaluateBmi(
                           latestRecord.weight / ((latestRecord.height / 100) * (latestRecord.height / 100)),
-                          kid.getAgeInMonths(latestRecord.date) / 12,
+                          kid.getAgeInYears(latestRecord.date),
                           isPink ? 'girl' : 'boy',
                         )
                       : null,
@@ -219,6 +225,20 @@ class CharacterDisplay extends StatelessWidget {
             size: 60,
             color: primaryColor,
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingCharacter(bool isPink) {
+    final primaryColor = isPink ? AppTheme.pinkPrimary : AppTheme.bluePrimary;
+    return Center(
+      child: SizedBox(
+        width: 60,
+        height: 60,
+        child: CircularProgressIndicator(
+          strokeWidth: 3,
+          valueColor: AlwaysStoppedAnimation<Color>(primaryColor.withValues(alpha: 0.5)),
         ),
       ),
     );
