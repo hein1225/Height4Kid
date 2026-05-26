@@ -18,16 +18,20 @@ import 'utils/update_checker.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // 设置沉浸式状态栏
+  // 设置沉浸式状态栏 - 使用 edgeToEdge 模式让内容延伸到状态栏和导航栏
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.dark,
-    systemNavigationBarColor: Colors.transparent,
-    systemNavigationBarIconBrightness: Brightness.dark,
+    statusBarColor: Colors.transparent,  // 状态栏透明
+    statusBarIconBrightness: Brightness.dark,  // 深色图标（适合浅色背景）
+    systemNavigationBarColor: Colors.transparent,  // 导航栏透明
+    systemNavigationBarIconBrightness: Brightness.dark,  // 导航栏深色图标
+    systemNavigationBarDividerColor: Colors.transparent,  // 导航栏分割线透明
   ));
   
-  // 设置全屏显示（沉浸式）
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  // 设置全屏显示（沉浸式）- 内容延伸到系统栏后面
+  SystemChrome.setEnabledSystemUIMode(
+    SystemUiMode.edgeToEdge,
+    overlays: [SystemUiOverlay.top, SystemUiOverlay.bottom],  // 保留状态栏和导航栏，但让它们透明
+  );
   
   runApp(const HeightKidApp());
 }

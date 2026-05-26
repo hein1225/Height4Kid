@@ -1135,7 +1135,8 @@ class _GrowthChartState extends State<GrowthChart> {
       }
 
       // 如果最近的数据点在一定范围内，选中它
-      if (closestIndex != null && closestDistance != null && closestDistance < 30) {
+      // 增大点击检测范围，让点更容易被点击（从30增加到50像素）
+      if (closestIndex != null && closestDistance != null && closestDistance < 50) {
         setState(() {
           _selectedRecordIndex = closestIndex;
           _selectedAge = null;
@@ -1665,7 +1666,10 @@ class _FullscreenChartContentState extends State<_FullscreenChartContent> {
   // 最大年龄范围
   static const double _maxAge = 18.0;
   static const double _minAge = 0.0;
-  static const double _viewRange = 5.0; // 可视范围5岁
+  static const double _viewRange = 4.0; // 可视范围4岁，让点更稀疏便于点击
+  
+  // InteractiveViewer 的变换控制器
+  final TransformationController _transformationController = TransformationController();
 
   @override
   void initState() {
@@ -1687,12 +1691,16 @@ class _FullscreenChartContentState extends State<_FullscreenChartContent> {
 
     final standards = StandardData.getStandards(widget.isPink ? 'girl' : 'boy', widget.isHeight);
 
-    // 计算Y轴范围 - 基于所有年龄的国标值
+    // 计算Y轴范围 - 只基于当前可视年龄范围（_viewMinAge 到 _viewMaxAge）
     double rangeMinVal = double.infinity;
     double rangeMaxVal = double.negativeInfinity;
 
-    for (int month = 0; month <= 216; month++) {
-      if (standards.containsKey(month)) {
+    // 只考虑当前可视范围内的国标值
+    final viewMinMonth = (_viewMinAge * 12).floor();
+    final viewMaxMonth = (_viewMaxAge * 12).ceil();
+    
+    for (int month = viewMinMonth; month <= viewMaxMonth && month <= 216; month++) {
+      if (month >= 0 && standards.containsKey(month)) {
         for (final val in standards[month]!.values) {
           if (val < rangeMinVal) rangeMinVal = val;
           if (val > rangeMaxVal) rangeMaxVal = val;
@@ -1700,11 +1708,12 @@ class _FullscreenChartContentState extends State<_FullscreenChartContent> {
       }
     }
 
-    // 考虑所有记录值
+    // 考虑当前可视范围内的记录值
     if (widget.records.isNotEmpty && widget.kid != null) {
       for (final record in widget.records) {
         final ageYears = widget.kid.getAgeInYears(record.date);
-        if (ageYears >= _minAge && ageYears <= _maxAge) {
+        // 只考虑在当前可视范围内的记录
+        if (ageYears >= _viewMinAge && ageYears <= _viewMaxAge) {
           final val = widget.isHeight ? record.height : record.weight;
           if (val < rangeMinVal) rangeMinVal = val;
           if (val > rangeMaxVal) rangeMaxVal = val;
@@ -1712,14 +1721,20 @@ class _FullscreenChartContentState extends State<_FullscreenChartContent> {
       }
     }
 
-    // 添加边距
+    // 如果没有找到任何值（比如范围太小），使用默认值
+    if (rangeMinVal == double.infinity) {
+      rangeMinVal = widget.isHeight ? 50.0 : 5.0;
+      rangeMaxVal = widget.isHeight ? 150.0 : 50.0;
+    }
+
+    // 添加边距（10%的边距让曲线不会贴边）
     final range = rangeMaxVal - rangeMinVal;
     final minVal = widget.isHeight
-        ? (rangeMinVal - range * 0.05).clamp(0.0, double.infinity)
-        : (rangeMinVal - range * 0.05).clamp(0.0, double.infinity);
+        ? (rangeMinVal - range * 0.1).clamp(0.0, double.infinity)
+        : (rangeMinVal - range * 0.1).clamp(0.0, double.infinity);
     final maxVal = widget.isHeight
-        ? (rangeMaxVal + range * 0.05).clamp(0.0, 200.0)
-        : (rangeMaxVal + range * 0.05).clamp(0.0, 100.0);
+        ? (rangeMaxVal + range * 0.1).clamp(0.0, 200.0)
+        : (rangeMaxVal + range * 0.1).clamp(0.0, 100.0);
 
     return Row(
       children: [
@@ -1736,28 +1751,28 @@ class _FullscreenChartContentState extends State<_FullscreenChartContent> {
               const SizedBox(height: 8),
               // 图表 - 支持拖动
               Expanded(
-                child: GestureDetector(
-                  onHorizontalDragStart: (details) {
-                    _dragStartX = details.localPosition.dx;
-                    _dragStartViewMinAge = _viewMinAge;
-                  },
-                  onHorizontalDragUpdate: (details) {
-                    final RenderBox box = context.findRenderObject() as RenderBox;
-                    final width = box.size.width * 3 / 4; // 左侧占3/4
-                    final dx = details.localPosition.dx - _dragStartX;
-                    final ageDelta = -(dx / width) * _viewRange;
-                    
-                    setState(() {
-                      _viewMinAge = (_dragStartViewMinAge + ageDelta).clamp(_minAge, _maxAge - _viewRange);
-                      _viewMaxAge = _viewMinAge + _viewRange;
-                    });
-                  },
-                  onTapUp: (details) {
-                    _handleTap(details.localPosition, minVal, maxVal);
-                  },
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      return CustomPaint(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return GestureDetector(
+                      onHorizontalDragStart: (details) {
+                        _dragStartX = details.localPosition.dx;
+                        _dragStartViewMinAge = _viewMinAge;
+                      },
+                      onHorizontalDragUpdate: (details) {
+                        final width = constraints.maxWidth;
+                        final dx = details.localPosition.dx - _dragStartX;
+                        // 使用固定的视图范围 _viewRange（4岁），保持窗口大小不变
+                        final ageDelta = -(dx / width) * _viewRange;
+                        
+                        setState(() {
+                          _viewMinAge = (_dragStartViewMinAge + ageDelta).clamp(_minAge, _maxAge - _viewRange);
+                          _viewMaxAge = _viewMinAge + _viewRange;
+                        });
+                      },
+                      onTapUp: (details) {
+                        _handleTap(details.localPosition, minVal, maxVal, constraints.maxWidth, constraints.maxHeight);
+                      },
+                      child: CustomPaint(
                         painter: _FullscreenChartPainter(
                           isHeight: widget.isHeight,
                           isPink: widget.isPink,
@@ -1773,12 +1788,12 @@ class _FullscreenChartContentState extends State<_FullscreenChartContent> {
                           selectedRecordIndex: _selectedRecordIndex,
                         ),
                         size: Size(constraints.maxWidth, constraints.maxHeight),
-                      );
-                    },
-                  ),
+                      ),
+                    );
+                  },
                 ),
               ),
-              // 拖动提示
+              // 操作提示
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Row(
@@ -1786,14 +1801,14 @@ class _FullscreenChartContentState extends State<_FullscreenChartContent> {
                   children: [
                     Icon(
                       Icons.drag_indicator,
-                      size: 16,
+                      size: 14,
                       color: AppTheme.textLight.withValues(alpha: 0.5),
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      '左右拖动查看完整曲线',
+                      '左右拖动查看完整曲线 · 点击数据点查看详情',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 11,
                         color: AppTheme.textLight.withValues(alpha: 0.5),
                       ),
                     ),
@@ -2264,16 +2279,11 @@ class _FullscreenChartContentState extends State<_FullscreenChartContent> {
     );
   }
 
-  void _handleTap(Offset position, double minVal, double maxVal) {
+  void _handleTap(Offset position, double minVal, double maxVal, double chartWidth, double chartHeight) {
     const paddingLeft = 50.0;
     const paddingTop = 20.0;
     const paddingRight = 20.0;
     const paddingBottom = 40.0;
-    
-    // 获取图表区域大小
-    final RenderBox box = context.findRenderObject() as RenderBox;
-    final chartWidth = box.size.width * 3 / 4; // 左侧占3/4
-    final chartHeight = box.size.height;
     
     final drawWidth = chartWidth - paddingLeft - paddingRight;
     final drawHeight = chartHeight - paddingTop - paddingBottom;
@@ -2574,7 +2584,8 @@ class _FullscreenChartPainter extends CustomPainter {
 
       // 检查这个点是否在重叠组中
       Offset displayOffset = points[i].offset;
-      double pointRadius = isSelected ? 8 : 5;
+      // 增大点的大小，让点击更容易（从5/8增加到7/10）
+      double pointRadius = isSelected ? 10 : 7;
       
       for (final group in overlappingGroups) {
         final indexInGroup = group.indexOf(i);
@@ -2583,7 +2594,7 @@ class _FullscreenChartPainter extends CustomPainter {
           // 根据在组中的位置，稍微偏移
           final offsetX = (indexInGroup - (group.length - 1) / 2) * 12;
           displayOffset = Offset(points[i].offset.dx + offsetX, points[i].offset.dy);
-          pointRadius = isSelected ? 9 : 6; // 重叠的点稍微大一点
+          pointRadius = isSelected ? 11 : 8; // 重叠的点稍微大一点
           break;
         }
       }
