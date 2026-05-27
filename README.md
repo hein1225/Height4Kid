@@ -157,8 +157,8 @@ cd android/app
 keytool -genkey -v -keystore height4kid-release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias height4kid
 
 # 按提示输入信息：
-# - 密钥库密码: height4kid2024
-# - 密钥密码: height4kid2024
+# - 密钥库密码: 
+# - 密钥密码: 
 # - 姓名、组织等信息可随意填写
 ```
 
