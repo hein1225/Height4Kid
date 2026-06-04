@@ -475,8 +475,8 @@ class AppProvider extends ChangeNotifier {
 
     // 根据开关状态设置或取消定时同步
     if (enabled && _syncConfig.hasAnyServiceConfigured) {
-      // 打开自动同步时，立即执行一次备份同步（上传本地数据）
-      _performBackupSync();
+      // 打开自动同步时，立即执行一次双向同步（比较后下载或上传）
+      performAutoSync();
       _setupPeriodicSync();
     } else {
       _syncTimer?.cancel();
