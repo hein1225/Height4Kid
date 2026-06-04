@@ -498,34 +498,48 @@ class AppProvider extends ChangeNotifier {
 
   /// 更新 WebDAV 配置（启用时会自动禁用其他服务）
   Future<void> updateWebDAVConfig(WebDAVConfig config) async {
+    final wasEnabled = _syncConfig.webdav.enabled;
     if (config.enabled) {
       // 启用 WebDAV 时，禁用其他云同步服务
       _syncConfig = _syncConfig.copyWith(
         webdav: config,
         nextcloud: _syncConfig.nextcloud.copyWith(enabled: false),
         boxsync: _syncConfig.boxsync.copyWith(enabled: false),
+        boxsyncPublic: _syncConfig.boxsyncPublic.copyWith(enabled: false),
       );
     } else {
       _syncConfig = _syncConfig.copyWith(webdav: config);
     }
     await _saveSyncConfig();
     notifyListeners();
+
+    // 如果是新启用服务，立即执行一次双向同步
+    if (config.enabled && !wasEnabled) {
+      performAutoSync();
+    }
   }
 
   /// 更新 Nextcloud 配置（启用时会自动禁用其他服务）
   Future<void> updateNextcloudConfig(NextcloudConfig config) async {
+    final wasEnabled = _syncConfig.nextcloud.enabled;
     if (config.enabled) {
       // 启用 Nextcloud 时，禁用其他云同步服务
       _syncConfig = _syncConfig.copyWith(
         webdav: _syncConfig.webdav.copyWith(enabled: false),
         nextcloud: config,
         boxsync: _syncConfig.boxsync.copyWith(enabled: false),
+        boxsyncPublic: _syncConfig.boxsyncPublic.copyWith(enabled: false),
       );
     } else {
       _syncConfig = _syncConfig.copyWith(nextcloud: config);
     }
     await _saveSyncConfig();
     notifyListeners();
+
+    // 如果是新启用服务，立即执行一次双向同步
+    if (config.enabled && !wasEnabled) {
+      performAutoSync();
+    }
   }
 
   /// 更新 BoxSync 配置（启用时会自动禁用其他服务）
@@ -535,6 +549,7 @@ class AppProvider extends ChangeNotifier {
     required String password,
     bool enabled = true,
   }) async {
+    final wasEnabled = _syncConfig.boxsync.enabled;
     final config = BoxSyncConfig(
       serverUrl: serverUrl,
       username: username,
@@ -548,12 +563,18 @@ class AppProvider extends ChangeNotifier {
         webdav: _syncConfig.webdav.copyWith(enabled: false),
         nextcloud: _syncConfig.nextcloud.copyWith(enabled: false),
         boxsync: config,
+        boxsyncPublic: _syncConfig.boxsyncPublic.copyWith(enabled: false),
       );
     } else {
       _syncConfig = _syncConfig.copyWith(boxsync: config);
     }
     await _saveSyncConfig();
     notifyListeners();
+
+    // 如果是新启用服务，立即执行一次双向同步
+    if (config.enabled && !wasEnabled) {
+      performAutoSync();
+    }
   }
 
   /// 清除 WebDAV 配置
@@ -593,6 +614,7 @@ class AppProvider extends ChangeNotifier {
     required String password,
     bool enabled = true,
   }) async {
+    final wasEnabled = _syncConfig.boxsyncPublic.enabled;
     final config = BoxSyncPublicConfig(
       username: username,
       password: password,
@@ -612,6 +634,11 @@ class AppProvider extends ChangeNotifier {
     }
     await _saveSyncConfig();
     notifyListeners();
+
+    // 如果是新启用服务，立即执行一次双向同步
+    if (config.enabled && !wasEnabled) {
+      performAutoSync();
+    }
   }
 
   /// 清除 BoxSync 公共服务区配置

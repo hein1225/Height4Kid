@@ -6,6 +6,7 @@ import '../providers/app_provider.dart';
 import '../theme/app_theme.dart';
 import '../models/child.dart';
 import '../utils/image_compressor.dart';
+import 'cloud_sync_screen.dart';
 
 class ChildrenScreen extends StatefulWidget {
   const ChildrenScreen({super.key});
@@ -1034,6 +1035,40 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 12),
+          // 云同步按钮
+          GestureDetector(
+            onTap: () => _navigateToCloudSync(context),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+              decoration: BoxDecoration(
+                color: primaryColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: primaryColor.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.cloud_sync,
+                    color: primaryColor.withValues(alpha: 0.8),
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '设置云同步',
+                    style: TextStyle(
+                      color: primaryColor.withValues(alpha: 0.9),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -1134,6 +1169,16 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
         );
       }
     }
+  }
+
+  // 导航到云同步设置页面
+  void _navigateToCloudSync(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const CloudSyncScreen(),
+      ),
+    );
   }
 }
 
