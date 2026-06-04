@@ -4,6 +4,13 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// 百度网盘 SDK 仓库配置
+repositories {
+    google()
+    mavenCentral()
+    maven { url = uri("https://repo1.maven.org/maven2") }
+}
+
 android {
     namespace = "com.heinci.height4kid"
     compileSdk = 36
@@ -52,4 +59,10 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // 百度网盘 SDK 需要手动下载集成
+    // 目前使用 OAuth2 网页授权方式
+    // 如需 SDK 方式，请从百度开放平台下载 SDK 并放入 libs 目录
 }

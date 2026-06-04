@@ -1,6 +1,4 @@
 
-import 'dart:convert';
-
 // Sentinel class for distinguishing between "not passed" and "null" in copyWith
 class _Sentinel {
   const _Sentinel();

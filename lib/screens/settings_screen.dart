@@ -10,6 +10,8 @@ import '../providers/app_provider.dart';
 import '../theme/app_theme.dart';
 import '../utils/permission_manager.dart';
 import '../utils/update_checker.dart';
+import '../models/sync_config.dart';
+import 'cloud_sync_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -54,7 +56,13 @@ class SettingsScreen extends StatelessWidget {
                   children: [
                     _buildSectionTitle('数据管理'),
                     const SizedBox(height: 16),
-                    _buildDataActions(context, appProvider, primaryColor, secondaryColor),
+                    _buildLocalDataSection(context, appProvider, primaryColor, secondaryColor),
+                    const SizedBox(height: 16),
+                    _buildCloudSyncSection(context, appProvider, primaryColor, secondaryColor),
+                    const SizedBox(height: 32),
+                    _buildSectionTitle('其他'),
+                    const SizedBox(height: 16),
+                    _buildOtherSection(context, appProvider),
                     const SizedBox(height: 32),
                     _buildSectionTitle('关于'),
                     const SizedBox(height: 16),
@@ -80,154 +88,9 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  // Launch URL
-  Future<void> _launchUrl(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
+  // ==================== 本地数据管理 ====================
 
-  // Export data to local file
-  Future<void> _exportData(BuildContext context, AppProvider appProvider) async {
-    try {
-      if (Platform.isAndroid) {
-        final granted = await PermissionManager().requestStoragePermission();
-        if (!granted) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('需要存储权限才能导出数据'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-          return;
-        }
-      }
-
-      final jsonData = await appProvider.exportData();
-      if (jsonData == null) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('导出数据失败'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-        return;
-      }
-
-      // Use file_saver to save with directory selection
-      final bytes = Uint8List.fromList(utf8.encode(jsonData));
-      final fileName = 'height4kid_backup_${DateTime.now().millisecondsSinceEpoch}.json';
-
-      final String? filePath = await FileSaver.instance.saveAs(
-        name: fileName,
-        bytes: bytes,
-        mimeType: MimeType.json,
-      );
-
-      if (filePath != null && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('数据已保存到: $filePath'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('导出失败: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  // Import data from local file
-  Future<void> _importData(BuildContext context, AppProvider appProvider) async {
-    try {
-      if (Platform.isAndroid) {
-        final granted = await PermissionManager().requestStoragePermission();
-        if (!granted) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('需要存储权限才能导入数据'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-          return;
-        }
-      }
-
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['json'],
-        allowMultiple: false,
-        withData: true,
-      );
-
-      if (result != null && result.files.isNotEmpty) {
-        final file = result.files.first;
-        if (file.bytes != null) {
-          final jsonString = utf8.decode(file.bytes!);
-          
-          if (context.mounted) {
-            final confirmed = await showDialog<bool>(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: const Text('确认导入'),
-                content: const Text('导入数据将覆盖当前所有数据，确定要继续吗？'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: const Text('取消'),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    child: const Text(
-                      '确定',
-                      style: TextStyle(color: Colors.red),
-                    ),
-                  ),
-                ],
-              ),
-            );
-
-            if (confirmed == true) {
-              final success = await appProvider.importData(jsonString);
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(success ? '数据导入成功' : '数据导入失败，请检查文件格式'),
-                    backgroundColor: success ? Colors.green : Colors.red,
-                  ),
-                );
-              }
-            }
-          }
-        }
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('导入失败: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  Widget _buildDataActions(
+  Widget _buildLocalDataSection(
     BuildContext context,
     AppProvider appProvider,
     Color primaryColor,
@@ -249,107 +112,213 @@ class SettingsScreen extends StatelessWidget {
         children: [
           _buildActionItem(
             icon: Icons.file_upload,
-            label: '导出数据',
+            label: '本地：数据备份',
+            subtitle: '导出数据到本地文件',
             color: primaryColor,
             onTap: () => _exportData(context, appProvider),
           ),
           Divider(height: 1, color: AppTheme.formBorder),
           _buildActionItem(
             icon: Icons.file_download,
-            label: '导入数据',
+            label: '本地：数据还原',
+            subtitle: '从本地文件导入数据',
             color: AppTheme.weightColor,
             onTap: () => _importData(context, appProvider),
-          ),
-          Divider(height: 1, color: AppTheme.formBorder),
-          _buildActionItem(
-            icon: Icons.delete_outline,
-            label: '清除所有数据',
-            color: Colors.red,
-            onTap: () {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('确认清除'),
-                  content: const Text('确定要清除所有数据吗？此操作不可恢复。'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('取消'),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        appProvider.clearAllData();
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('数据已清除'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      },
-                      child: const Text(
-                        '确定',
-                        style: TextStyle(color: Colors.red),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
           ),
         ],
       ),
     );
   }
 
-  Widget _buildActionItem({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-        child: Row(
+  // ==================== 云同步 ====================
+
+  Widget _buildCloudSyncSection(
+    BuildContext context,
+    AppProvider appProvider,
+    Color primaryColor,
+    Color secondaryColor,
+  ) {
+    final syncConfig = appProvider.syncConfig;
+    final enabledServices = syncConfig.enabledServices;
+    final hasConfiguredService = syncConfig.hasAnyServiceConfigured;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 30,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: _buildActionItem(
+        icon: Icons.cloud_sync,
+        label: '云同步管理',
+        subtitle: _getCloudSyncSummaryText(syncConfig),
+        color: primaryColor,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(22),
-              ),
-              child: Center(
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 22,
+            // 状态指示灯
+            if (hasConfiguredService)
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: enabledServices.isNotEmpty ? Colors.green : Colors.orange,
                 ),
               ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textDark,
-                ),
-              ),
-            ),
-            Icon(
-              Icons.arrow_forward_ios,
-              color: AppTheme.textLight,
-              size: 16,
-            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.chevron_right, color: AppTheme.textLight),
           ],
         ),
+        onTap: () => _openCloudSyncScreen(context),
       ),
     );
   }
+
+  String _getCloudSyncSummaryText(SyncConfig syncConfig) {
+    final enabledServices = syncConfig.enabledServices;
+    
+    if (enabledServices.isNotEmpty) {
+      final serviceName = enabledServices.first.serviceName;
+      return '已启用: $serviceName';
+    }
+    
+    if (syncConfig.hasAnyServiceConfigured) {
+      return '已配置（未启用）';
+    }
+    
+    return '点击配置云同步服务';
+  }
+
+  void _openCloudSyncScreen(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const CloudSyncScreen(),
+      ),
+    );
+  }
+
+  /// 显示清除配置确认对话框
+  void _showClearConfigDialog(
+    BuildContext context,
+    String serviceName,
+    Future<void> Function() onClear,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.delete_outline, color: Colors.red.withValues(alpha: 0.8)),
+            const SizedBox(width: 8),
+            const Text('删除配置'),
+          ],
+        ),
+        content: Text('确定要删除 $serviceName 的同步配置吗？此操作不可恢复。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await onClear();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('$serviceName 配置已删除'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==================== 其他 ====================
+
+  Widget _buildOtherSection(BuildContext context, AppProvider appProvider) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 30,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: _buildActionItem(
+        icon: Icons.delete_outline,
+        label: '清除所有数据',
+        subtitle: '同时清除云同步账号信息',
+        color: Colors.red,
+        onTap: () => _showClearDataDialog(context, appProvider),
+      ),
+    );
+  }
+
+  void _showClearDataDialog(BuildContext context, AppProvider appProvider) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning, color: Colors.red),
+            SizedBox(width: 8),
+            Text('确认清除'),
+          ],
+        ),
+        content: const Text(
+          '确定要清除所有数据吗？此操作将同时清除云同步账号信息，且不可恢复。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () async {
+              await appProvider.clearAllDataWithSync();
+              if (context.mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('数据已清除'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            child: const Text(
+              '确定',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==================== 关于 ====================
 
   Widget _buildAboutCard(BuildContext context) {
     return Container(
@@ -592,6 +561,223 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
+  // ==================== 通用组件 ====================
+
+  Widget _buildActionItem({
+    required IconData icon,
+    required String label,
+    String? subtitle,
+    required Color color,
+    required VoidCallback onTap,
+    Widget? trailing,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(22),
+              ),
+              child: Center(
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: 22,
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textDark,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppTheme.textLight,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            trailing ?? Icon(
+              Icons.arrow_forward_ios,
+              color: AppTheme.textLight,
+              size: 16,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ==================== 数据操作 ====================
+
+  // Launch URL
+  Future<void> _launchUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  // Export data to local file
+  Future<void> _exportData(BuildContext context, AppProvider appProvider) async {
+    try {
+      if (Platform.isAndroid) {
+        final granted = await PermissionManager().requestStoragePermission();
+        if (!granted) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('需要存储权限才能导出数据'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return;
+        }
+      }
+
+      final jsonData = await appProvider.exportData();
+      if (jsonData == null) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('导出数据失败'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Use file_saver to save with directory selection
+      final bytes = Uint8List.fromList(utf8.encode(jsonData));
+      final fileName = 'height4kid_backup_${DateTime.now().millisecondsSinceEpoch}.json';
+
+      final String? filePath = await FileSaver.instance.saveAs(
+        name: fileName,
+        bytes: bytes,
+        mimeType: MimeType.json,
+      );
+
+      if (filePath != null && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('数据已保存到: $filePath'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('导出失败: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // Import data from local file
+  Future<void> _importData(BuildContext context, AppProvider appProvider) async {
+    try {
+      if (Platform.isAndroid) {
+        final granted = await PermissionManager().requestStoragePermission();
+        if (!granted) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('需要存储权限才能导入数据'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return;
+        }
+      }
+
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        allowMultiple: false,
+        withData: true,
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        final file = result.files.first;
+        if (file.bytes != null) {
+          final jsonString = utf8.decode(file.bytes!);
+
+          if (context.mounted) {
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('确认导入'),
+                content: const Text('导入数据将覆盖当前所有数据，确定要继续吗？'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('取消'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text(
+                      '确定',
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ),
+                ],
+              ),
+            );
+
+            if (confirmed == true) {
+              final success = await appProvider.importData(jsonString);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(success ? '数据导入成功' : '数据导入失败，请检查文件格式'),
+                    backgroundColor: success ? Colors.green : Colors.red,
+                  ),
+                );
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('导入失败: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   // 构建指定渠道的检查更新按钮
   Widget _buildChannelUpdateButton(
     BuildContext context, {
@@ -604,44 +790,45 @@ class SettingsScreen extends StatelessWidget {
       builder: (context, setState) {
         bool isChecking = false;
 
+        VoidCallback? onTapHandler;
+        onTapHandler = () async {
+          setState(() => isChecking = true);
+
+          UpdateInfo? updateInfo;
+          if (channel == UpdateChannel.gitcode) {
+            updateInfo = await UpdateChecker.checkGitCodeUpdate();
+          } else {
+            updateInfo = await UpdateChecker.checkGitHubUpdate();
+          }
+
+          if (context.mounted) {
+            setState(() => isChecking = false);
+
+            if (updateInfo == null) {
+              // 检查失败
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('$label失败，请检查网络连接'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            } else if (updateInfo.hasUpdate) {
+              // 有新版本
+              _showUpdateDialog(context, updateInfo);
+            } else {
+              // 已经是最新版本
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('当前已是最新版本 (${UpdateChecker.currentVersion})'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
+          }
+        };
+
         return GestureDetector(
-          onTap: isChecking
-              ? null
-              : () async {
-                  setState(() => isChecking = true);
-
-                  UpdateInfo? updateInfo;
-                  if (channel == UpdateChannel.gitcode) {
-                    updateInfo = await UpdateChecker.checkGitCodeUpdate();
-                  } else {
-                    updateInfo = await UpdateChecker.checkGitHubUpdate();
-                  }
-
-                  if (context.mounted) {
-                    setState(() => isChecking = false);
-
-                    if (updateInfo == null) {
-                      // 检查失败
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('$label失败，请检查网络连接'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    } else if (updateInfo.hasUpdate) {
-                      // 有新版本
-                      _showUpdateDialog(context, updateInfo);
-                    } else {
-                      // 已经是最新版本
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('当前已是最新版本 (${UpdateChecker.currentVersion})'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    }
-                  }
-                },
+          onTap: isChecking ? null : onTapHandler,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(

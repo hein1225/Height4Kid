@@ -48,78 +48,13 @@ class HomeScreen extends StatelessWidget {
                       ),
                       child: Column(
                         children: [
-                          // Avatar, kid name and settings row
+                          // Avatar, kid name and settings row - 使用独立的 StatefulWidget 避免重建
                           if (kid != null)
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-                              child: Row(
-                                children: [
-                                  GestureDetector(
-                                    onTap: () => appProvider.setPage('kids'),
-                                    child: Stack(
-                                      children: [
-                                        Container(
-                                          width: 48,
-                                          height: 48,
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius: BorderRadius.circular(24),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.black.withValues(alpha: 0.1),
-                                                blurRadius: 8,
-                                                offset: const Offset(0, 4),
-                                              ),
-                                            ],
-                                            border: Border.all(
-                                              color: Colors.white,
-                                              width: 2,
-                                            ),
-                                          ),
-                                          child: kid.avatar != null
-                                              ? ClipOval(
-                                                  child: _buildAvatarImage(kid.avatar!, isPink),
-                                                )
-                                              : _defaultAvatar(isPink),
-                                        ),
-                                        // 切换标识
-                                        Positioned(
-                                          right: 0,
-                                          bottom: 0,
-                                          child: Container(
-                                            width: 16,
-                                            height: 16,
-                                            decoration: BoxDecoration(
-                                              color: isPink ? AppTheme.pinkPrimary : AppTheme.bluePrimary,
-                                              borderRadius: BorderRadius.circular(8),
-                                              border: Border.all(color: Colors.white, width: 2),
-                                            ),
-                                            child: const Icon(
-                                              Icons.swap_horiz,
-                                              size: 10,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    kid.name,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppTheme.textDark,
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  _HeaderButton(
-                                    icon: Icons.settings,
-                                    onTap: () => appProvider.setPage('settings'),
-                                  ),
-                                ],
-                              ),
+                            _KidHeader(
+                              kid: kid,
+                              isPink: isPink,
+                              onTapAvatar: () => appProvider.setPage('kids'),
+                              onTapSettings: () => appProvider.setPage('settings'),
                             ),
                           const SizedBox(height: 10),
                           // Character display with data tags
@@ -144,6 +79,101 @@ class HomeScreen extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+/// 独立的 Header 组件，避免切换图表类型时重建头像
+class _KidHeader extends StatefulWidget {
+  final dynamic kid;
+  final bool isPink;
+  final VoidCallback onTapAvatar;
+  final VoidCallback onTapSettings;
+
+  const _KidHeader({
+    required this.kid,
+    required this.isPink,
+    required this.onTapAvatar,
+    required this.onTapSettings,
+  });
+
+  @override
+  State<_KidHeader> createState() => _KidHeaderState();
+}
+
+class _KidHeaderState extends State<_KidHeader> {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: widget.onTapAvatar,
+            child: Stack(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                    border: Border.all(
+                      color: Colors.white,
+                      width: 2,
+                    ),
+                  ),
+                  child: widget.kid.avatar != null
+                      ? ClipOval(
+                          child: _buildAvatarImage(widget.kid.avatar!, widget.isPink),
+                        )
+                      : _defaultAvatar(widget.isPink),
+                ),
+                // 切换标识
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    width: 16,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: widget.isPink ? AppTheme.pinkPrimary : AppTheme.bluePrimary,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: const Icon(
+                      Icons.swap_horiz,
+                      size: 10,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            widget.kid.name,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textDark,
+            ),
+          ),
+          const Spacer(),
+          _HeaderButton(
+            icon: Icons.settings,
+            onTap: widget.onTapSettings,
+          ),
+        ],
+      ),
     );
   }
 

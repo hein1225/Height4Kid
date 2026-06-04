@@ -52,7 +52,7 @@ class UpdateInfo {
 }
 
 class UpdateChecker {
-  static const String _currentVersion = '1.0.3';
+  static const String _currentVersion = '1.1.0';
   static const String _lastCheckKey = 'last_update_check';
   static const String _skippedVersionKey = 'skipped_update_version';
 
@@ -219,7 +219,7 @@ class UpdateChecker {
   static UpdateInfo _getMockUpdateInfo(UpdateChannel channel) {
     final isGitCode = channel == UpdateChannel.gitcode;
     return UpdateInfo(
-      version: '1.0.3',
+      version: '1.1.0',
       downloadUrl: isGitCode ? _gitcodeReleasePageUrl : _githubReleasePageUrl,
       apkDownloadUrl: null,
       releaseNotes: 'Web环境模拟数据\n\n在真实Android设备上可以正常检查更新',

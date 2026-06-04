@@ -34,6 +34,11 @@ class AppTheme {
   static const Color navBg = Color(0xFFF8F8F8);
   static const Color formBorder = Color(0xFFF0F0F0);
   static const Color formBg = Color(0xFFFAFAFA);
+  static const Color background = Color(0xFFF5F5F5);
+
+  // 通用颜色别名
+  static const Color textPrimary = textDark;
+  static const Color primary = pinkPrimary;
 
   static ThemeData pinkTheme = ThemeData(
     colorScheme: ColorScheme.fromSeed(

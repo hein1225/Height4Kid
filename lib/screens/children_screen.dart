@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import '../providers/app_provider.dart';
 import '../theme/app_theme.dart';
 import '../models/child.dart';
+import '../utils/image_compressor.dart';
 
 class ChildrenScreen extends StatefulWidget {
   const ChildrenScreen({super.key});
@@ -252,12 +253,62 @@ class _ChildrenScreenState extends State<ChildrenScreen> {
       if (result != null && result.files.isNotEmpty) {
         final file = result.files.first;
         if (file.bytes != null) {
-          final base64String = base64Encode(file.bytes!);
-          final dataUrl = 'data:image/${file.extension};base64,$base64String';
-          
-          setState(() {
-            _avatarUrl = dataUrl;
-          });
+          // 显示压缩中提示
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('正在压缩图片...'),
+                duration: Duration(seconds: 1),
+              ),
+            );
+          }
+
+          // 压缩图片
+          final compressedDataUrl = await ImageCompressor.compressImage(
+            file.bytes!,
+            isBase64: false,
+          );
+
+          if (compressedDataUrl != null) {
+            // 获取压缩前后的信息
+            final originalInfo = ImageCompressor.getImageInfo(
+              'data:image/${file.extension};base64,${base64Encode(file.bytes!)}',
+            );
+            final compressedInfo = ImageCompressor.getImageInfo(compressedDataUrl);
+
+            setState(() {
+              _avatarUrl = compressedDataUrl;
+            });
+
+            // 显示压缩结果
+            if (mounted && originalInfo != null && compressedInfo != null) {
+              final savedKB = (originalInfo['size'] - compressedInfo['size']) ~/ 1024;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '图片已压缩: ${originalInfo['sizeKB']}KB → ${compressedInfo['sizeKB']}KB (节省 $savedKB KB)',
+                  ),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
+          } else {
+            // 压缩失败，使用原图
+            final base64String = base64Encode(file.bytes!);
+            final dataUrl = 'data:image/${file.extension};base64,$base64String';
+            setState(() {
+              _avatarUrl = dataUrl;
+            });
+
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('图片压缩失败，已使用原图'),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+            }
+          }
         }
       }
     } catch (e) {

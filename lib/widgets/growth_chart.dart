@@ -2575,17 +2575,17 @@ class _FullscreenChartPainter extends CustomPainter {
       }
     }
 
-    // 绘制数据点
+    // 绘制数据点 - 缩小大小并改为半透明
     for (int i = 0; i < points.length; i++) {
       final isSelected = selectedRecordIndex == points[i].recordIndex;
       final pointPaint = Paint()
-        ..color = isSelected ? AppTheme.highlightPoint : color
+        ..color = isSelected ? AppTheme.highlightPoint : color.withValues(alpha: 0.5)
         ..style = PaintingStyle.fill;
 
       // 检查这个点是否在重叠组中
       Offset displayOffset = points[i].offset;
-      // 增大点的大小，让点击更容易（从5/8增加到7/10）
-      double pointRadius = isSelected ? 10 : 7;
+      // 缩小点的大小（从10/7减小到6/4）
+      double pointRadius = isSelected ? 6 : 4;
       
       for (final group in overlappingGroups) {
         final indexInGroup = group.indexOf(i);
@@ -2594,7 +2594,7 @@ class _FullscreenChartPainter extends CustomPainter {
           // 根据在组中的位置，稍微偏移
           final offsetX = (indexInGroup - (group.length - 1) / 2) * 12;
           displayOffset = Offset(points[i].offset.dx + offsetX, points[i].offset.dy);
-          pointRadius = isSelected ? 11 : 8; // 重叠的点稍微大一点
+          pointRadius = isSelected ? 7 : 5; // 重叠的点稍微大一点
           break;
         }
       }
@@ -2605,7 +2605,7 @@ class _FullscreenChartPainter extends CustomPainter {
         final outerPaint = Paint()
           ..color = AppTheme.highlightPoint.withValues(alpha: 0.3)
           ..style = PaintingStyle.fill;
-        canvas.drawCircle(displayOffset, 18, outerPaint);
+        canvas.drawCircle(displayOffset, 12, outerPaint);
       }
     }
   }
