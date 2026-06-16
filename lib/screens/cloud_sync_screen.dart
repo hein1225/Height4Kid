@@ -6,7 +6,6 @@ import '../theme/app_theme.dart';
 import 'webdav_config_screen.dart';
 import 'nextcloud_config_screen.dart';
 import 'boxsync_config_screen.dart';
-import 'boxsync_public_config_screen.dart';
 
 /// 云同步管理页面
 /// 集中管理所有云同步服务（WebDAV、Nextcloud、BoxSync）
@@ -97,18 +96,18 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
             ),
             const SizedBox(height: 16),
 
-            // BoxSync 公共服务区
+            // BoxSync
             _buildServiceCard(
-              type: SyncServiceType.boxsyncPublic,
-              title: 'BoxSync（公共服务区）',
-              subtitle: '使用公共服务器进行同步',
-              icon: Icons.cloud_done,
-              color: Colors.green,
-              config: syncConfig.boxsyncPublic,
-              onTap: () => _openConfigScreen(SyncServiceType.boxsyncPublic),
-              onToggle: (enabled) => _toggleService(SyncServiceType.boxsyncPublic, enabled),
-              onDelete: syncConfig.boxsyncPublic.isConfigured
-                  ? () => _deleteService(SyncServiceType.boxsyncPublic)
+              type: SyncServiceType.boxsync,
+              title: 'BoxSync',
+              subtitle: '私有云同步服务器',
+              icon: Icons.dns,
+              color: Colors.purple,
+              config: syncConfig.boxsync,
+              onTap: () => _openConfigScreen(SyncServiceType.boxsync),
+              onToggle: (enabled) => _toggleService(SyncServiceType.boxsync, enabled),
+              onDelete: syncConfig.boxsync.isConfigured
+                  ? () => _deleteService(SyncServiceType.boxsync)
                   : null,
             ),
             const SizedBox(height: 12),
@@ -141,22 +140,6 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
               onToggle: (enabled) => _toggleService(SyncServiceType.nextcloud, enabled),
               onDelete: syncConfig.nextcloud.isConfigured
                   ? () => _deleteService(SyncServiceType.nextcloud)
-                  : null,
-            ),
-            const SizedBox(height: 12),
-
-            // BoxSync 私有服务器
-            _buildServiceCard(
-              type: SyncServiceType.boxsync,
-              title: 'BoxSync（私有服务器）',
-              subtitle: '自建私有云同步服务器',
-              icon: Icons.dns,
-              color: Colors.purple,
-              config: syncConfig.boxsync,
-              onTap: () => _openConfigScreen(SyncServiceType.boxsync),
-              onToggle: (enabled) => _toggleService(SyncServiceType.boxsync, enabled),
-              onDelete: syncConfig.boxsync.isConfigured
-                  ? () => _deleteService(SyncServiceType.boxsync)
                   : null,
             ),
 
@@ -594,17 +577,14 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
   void _openConfigScreen(SyncServiceType type) {
     Widget screen;
     switch (type) {
-      case SyncServiceType.boxsyncPublic:
-        screen = const BoxSyncPublicConfigScreen();
+      case SyncServiceType.boxsync:
+        screen = const BoxSyncConfigScreen();
         break;
       case SyncServiceType.webdav:
         screen = const WebDAVConfigScreen();
         break;
       case SyncServiceType.nextcloud:
         screen = const NextcloudConfigScreen();
-        break;
-      case SyncServiceType.boxsync:
-        screen = const BoxSyncConfigScreen();
         break;
     }
 
@@ -623,9 +603,10 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
     if (enabled) {
       // 启用服务
       switch (type) {
-        case SyncServiceType.boxsyncPublic:
-          final config = appProvider.syncConfig.boxsyncPublic.copyWith(enabled: true);
-          await appProvider.updateBoxSyncPublicConfig(
+        case SyncServiceType.boxsync:
+          final config = appProvider.syncConfig.boxsync.copyWith(enabled: true);
+          await appProvider.updateBoxSyncConfig(
+            serverUrl: config.serverUrl,
             username: config.username,
             password: config.password,
             enabled: true,
@@ -639,22 +620,14 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
           final config = appProvider.syncConfig.nextcloud.copyWith(enabled: true);
           await appProvider.updateNextcloudConfig(config);
           break;
-        case SyncServiceType.boxsync:
-          final config = appProvider.syncConfig.boxsync.copyWith(enabled: true);
-          await appProvider.updateBoxSyncConfig(
-            serverUrl: config.serverUrl,
-            username: config.username,
-            password: config.password,
-            enabled: true,
-          );
-          break;
       }
     } else {
       // 禁用服务
       switch (type) {
-        case SyncServiceType.boxsyncPublic:
-          final config = appProvider.syncConfig.boxsyncPublic.copyWith(enabled: false);
-          await appProvider.updateBoxSyncPublicConfig(
+        case SyncServiceType.boxsync:
+          final config = appProvider.syncConfig.boxsync.copyWith(enabled: false);
+          await appProvider.updateBoxSyncConfig(
+            serverUrl: config.serverUrl,
             username: config.username,
             password: config.password,
             enabled: false,
@@ -667,15 +640,6 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
         case SyncServiceType.nextcloud:
           final config = appProvider.syncConfig.nextcloud.copyWith(enabled: false);
           await appProvider.updateNextcloudConfig(config);
-          break;
-        case SyncServiceType.boxsync:
-          final config = appProvider.syncConfig.boxsync.copyWith(enabled: false);
-          await appProvider.updateBoxSyncConfig(
-            serverUrl: config.serverUrl,
-            username: config.username,
-            password: config.password,
-            enabled: false,
-          );
           break;
       }
     }
@@ -704,17 +668,14 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
     if (confirmed == true) {
       final appProvider = context.read<AppProvider>();
       switch (type) {
-        case SyncServiceType.boxsyncPublic:
-          await appProvider.clearBoxSyncPublicConfig();
+        case SyncServiceType.boxsync:
+          await appProvider.clearBoxSyncConfig();
           break;
         case SyncServiceType.webdav:
           await appProvider.clearWebDAVConfig();
           break;
         case SyncServiceType.nextcloud:
           await appProvider.clearNextcloudConfig();
-          break;
-        case SyncServiceType.boxsync:
-          await appProvider.clearBoxSyncConfig();
           break;
       }
     }

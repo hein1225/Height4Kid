@@ -920,7 +920,7 @@ class _GrowthChartState extends State<GrowthChart> {
                 },
               ),
               title: Text(
-                isHeight ? '身高成长曲线 (1-18岁)' : '体重成长曲线 (1-18岁)',
+                isHeight ? '身高成长曲线 (3岁区间)' : '体重成长曲线 (3岁区间)',
                 style: const TextStyle(
                   color: AppTheme.textDark,
                   fontSize: 18,
@@ -992,10 +992,10 @@ class _GrowthChartState extends State<GrowthChart> {
 
     final standards = StandardData.getStandards(isPink ? 'girl' : 'boy', isHeight);
 
-    // 非全屏模式：显示当前年龄前后1岁，从0岁开始
+    // 非全屏模式：显示当前年龄前后半年，从0岁开始
     double currentAge = kid != null ? kid.getAgeInYears(DateTime.now().toString().substring(0, 10)) : 3;
-    double minAge = (currentAge - 1).clamp(0, 17).toDouble();
-    double maxAge = (currentAge + 1).clamp(0, 18).toDouble();
+    double minAge = (currentAge - 0.5).clamp(0, 17.5).toDouble();
+    double maxAge = (currentAge + 0.5).clamp(0, 18).toDouble();
 
     // 不再取整，保留小数以支持非整数岁的插值显示
 
@@ -1666,7 +1666,7 @@ class _FullscreenChartContentState extends State<_FullscreenChartContent> {
   // 最大年龄范围
   static const double _maxAge = 18.0;
   static const double _minAge = 0.0;
-  static const double _viewRange = 4.0; // 可视范围4岁，让点更稀疏便于点击
+  static const double _viewRange = 3.0; // 可视范围3岁
   
   // InteractiveViewer 的变换控制器
   final TransformationController _transformationController = TransformationController();

@@ -9,7 +9,7 @@ import '../services/sync_service.dart';
 import '../services/webdav_sync_service.dart';
 import '../services/nextcloud_sync_service.dart';
 import '../services/boxsync_sync_service.dart';
-import '../services/boxsync_public_sync_service.dart';
+
 import '../utils/sync_utils.dart';
 import '../utils/image_compressor.dart';
 import '../utils/secure_storage.dart';
@@ -208,17 +208,6 @@ class AppProvider extends ChangeNotifier {
       );
     }
 
-    // BoxSync Public
-    final boxsyncPublicPassword = await SecureStorage.getBoxSyncPublicPassword();
-    final boxsyncPublicToken = await SecureStorage.getBoxSyncPublicToken();
-    if (boxsyncPublicPassword != null || boxsyncPublicToken != null) {
-      _syncConfig = _syncConfig.copyWith(
-        boxsyncPublic: _syncConfig.boxsyncPublic.copyWith(
-          password: boxsyncPublicPassword ?? _syncConfig.boxsyncPublic.password,
-          token: boxsyncPublicToken ?? _syncConfig.boxsyncPublic.token,
-        ),
-      );
-    }
   }
 
   /// 保存敏感信息到安全存储
@@ -241,13 +230,6 @@ class AppProvider extends ChangeNotifier {
       await SecureStorage.saveBoxSyncToken(_syncConfig.boxsync.token!);
     }
 
-    // BoxSync Public
-    if (_syncConfig.boxsyncPublic.password.isNotEmpty) {
-      await SecureStorage.saveBoxSyncPublicPassword(_syncConfig.boxsyncPublic.password);
-    }
-    if (_syncConfig.boxsyncPublic.token != null && _syncConfig.boxsyncPublic.token!.isNotEmpty) {
-      await SecureStorage.saveBoxSyncPublicToken(_syncConfig.boxsyncPublic.token!);
-    }
   }
 
   Future<void> _saveData() async {
@@ -277,7 +259,6 @@ class AppProvider extends ChangeNotifier {
       webdav: _syncConfig.webdav.copyWith(password: ''),
       nextcloud: _syncConfig.nextcloud.copyWith(password: ''),
       boxsync: _syncConfig.boxsync.copyWith(password: '', token: null),
-      boxsyncPublic: _syncConfig.boxsyncPublic.copyWith(password: '', token: null),
     );
 
     await prefs.setString('syncConfig', configForStorage.toJsonString());
@@ -503,9 +484,8 @@ class AppProvider extends ChangeNotifier {
       // 启用 WebDAV 时，禁用其他云同步服务
       _syncConfig = _syncConfig.copyWith(
         webdav: config,
-        nextcloud: _syncConfig.nextcloud.copyWith(enabled: false),
         boxsync: _syncConfig.boxsync.copyWith(enabled: false),
-        boxsyncPublic: _syncConfig.boxsyncPublic.copyWith(enabled: false),
+        nextcloud: _syncConfig.nextcloud.copyWith(enabled: false),
       );
     } else {
       _syncConfig = _syncConfig.copyWith(webdav: config);
@@ -525,10 +505,9 @@ class AppProvider extends ChangeNotifier {
     if (config.enabled) {
       // 启用 Nextcloud 时，禁用其他云同步服务
       _syncConfig = _syncConfig.copyWith(
+        boxsync: _syncConfig.boxsync.copyWith(enabled: false),
         webdav: _syncConfig.webdav.copyWith(enabled: false),
         nextcloud: config,
-        boxsync: _syncConfig.boxsync.copyWith(enabled: false),
-        boxsyncPublic: _syncConfig.boxsyncPublic.copyWith(enabled: false),
       );
     } else {
       _syncConfig = _syncConfig.copyWith(nextcloud: config);
@@ -560,10 +539,9 @@ class AppProvider extends ChangeNotifier {
     if (config.enabled) {
       // 启用 BoxSync 时，禁用其他云同步服务
       _syncConfig = _syncConfig.copyWith(
+        boxsync: config,
         webdav: _syncConfig.webdav.copyWith(enabled: false),
         nextcloud: _syncConfig.nextcloud.copyWith(enabled: false),
-        boxsync: config,
-        boxsyncPublic: _syncConfig.boxsyncPublic.copyWith(enabled: false),
       );
     } else {
       _syncConfig = _syncConfig.copyWith(boxsync: config);
@@ -608,66 +586,19 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 更新 BoxSync 公共服务区配置（启用时会自动禁用其他服务）
-  Future<void> updateBoxSyncPublicConfig({
-    required String username,
-    required String password,
-    bool enabled = true,
-  }) async {
-    final wasEnabled = _syncConfig.boxsyncPublic.enabled;
-    final config = BoxSyncPublicConfig(
-      username: username,
-      password: password,
-      enabled: enabled,
-    );
-
-    if (config.enabled) {
-      // 启用 BoxSync 公共服务区时，禁用其他云同步服务
-      _syncConfig = _syncConfig.copyWith(
-        webdav: _syncConfig.webdav.copyWith(enabled: false),
-        nextcloud: _syncConfig.nextcloud.copyWith(enabled: false),
-        boxsync: _syncConfig.boxsync.copyWith(enabled: false),
-        boxsyncPublic: config,
-      );
-    } else {
-      _syncConfig = _syncConfig.copyWith(boxsyncPublic: config);
-    }
-    await _saveSyncConfig();
-    notifyListeners();
-
-    // 如果是新启用服务，立即执行一次双向同步
-    if (config.enabled && !wasEnabled) {
-      performAutoSync();
-    }
-  }
-
-  /// 清除 BoxSync 公共服务区配置
-  Future<void> clearBoxSyncPublicConfig() async {
-    _syncConfig = _syncConfig.copyWith(
-      boxsyncPublic: BoxSyncPublicConfig(),
-    );
-    await SecureStorage.deleteBoxSyncPublicPassword();
-    await SecureStorage.deleteBoxSyncPublicToken();
-    await _saveSyncConfig();
-    notifyListeners();
-  }
-
   // ==================== 同步服务创建 ====================
 
   SyncService? _createSyncService(SyncServiceType type) {
     switch (type) {
-      case SyncServiceType.boxsyncPublic:
-        if (!_syncConfig.boxsyncPublic.isConfigured) return null;
-        return BoxSyncPublicSyncService(config: _syncConfig.boxsyncPublic);
+      case SyncServiceType.boxsync:
+        if (!_syncConfig.boxsync.isConfigured) return null;
+        return BoxSyncSyncService(config: _syncConfig.boxsync);
       case SyncServiceType.webdav:
         if (!_syncConfig.webdav.isConfigured) return null;
         return WebDAVSyncService(config: _syncConfig.webdav);
       case SyncServiceType.nextcloud:
         if (!_syncConfig.nextcloud.isConfigured) return null;
         return NextcloudSyncService(config: _syncConfig.nextcloud);
-      case SyncServiceType.boxsync:
-        if (!_syncConfig.boxsync.isConfigured) return null;
-        return BoxSyncSyncService(config: _syncConfig.boxsync);
     }
   }
 
@@ -832,23 +763,21 @@ class AppProvider extends ChangeNotifier {
   /// 获取服务的最后同步时间
   DateTime? _getServiceLastSyncTime(SyncServiceType type) {
     switch (type) {
-      case SyncServiceType.boxsyncPublic:
-        return _syncConfig.boxsyncPublic.lastSyncTime;
+      case SyncServiceType.boxsync:
+        return _syncConfig.boxsync.lastSyncTime;
       case SyncServiceType.webdav:
         return _syncConfig.webdav.lastSyncTime;
       case SyncServiceType.nextcloud:
         return _syncConfig.nextcloud.lastSyncTime;
-      case SyncServiceType.boxsync:
-        return _syncConfig.boxsync.lastSyncTime;
     }
   }
 
   /// 更新服务的最后同步时间
   Future<void> _updateServiceLastSyncTime(SyncServiceType type, DateTime time, SyncStatus status) async {
     switch (type) {
-      case SyncServiceType.boxsyncPublic:
+      case SyncServiceType.boxsync:
         _syncConfig = _syncConfig.copyWith(
-          boxsyncPublic: _syncConfig.boxsyncPublic.copyWith(lastSyncTime: time, lastSyncStatus: status),
+          boxsync: _syncConfig.boxsync.copyWith(lastSyncTime: time, lastSyncStatus: status),
         );
         break;
       case SyncServiceType.webdav:
@@ -859,11 +788,6 @@ class AppProvider extends ChangeNotifier {
       case SyncServiceType.nextcloud:
         _syncConfig = _syncConfig.copyWith(
           nextcloud: _syncConfig.nextcloud.copyWith(lastSyncTime: time, lastSyncStatus: status),
-        );
-        break;
-      case SyncServiceType.boxsync:
-        _syncConfig = _syncConfig.copyWith(
-          boxsync: _syncConfig.boxsync.copyWith(lastSyncTime: time, lastSyncStatus: status),
         );
         break;
     }

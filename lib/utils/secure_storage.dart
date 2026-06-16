@@ -74,34 +74,6 @@ class SecureStorage {
     await _storage.delete(key: _boxsyncTokenKey);
   }
 
-  // ==================== BoxSync Public ====================
-  static const String _boxsyncPublicPasswordKey = 'boxsync_public_password';
-  static const String _boxsyncPublicTokenKey = 'boxsync_public_token';
-
-  static Future<void> saveBoxSyncPublicPassword(String password) async {
-    await _storage.write(key: _boxsyncPublicPasswordKey, value: password);
-  }
-
-  static Future<String?> getBoxSyncPublicPassword() async {
-    return await _storage.read(key: _boxsyncPublicPasswordKey);
-  }
-
-  static Future<void> deleteBoxSyncPublicPassword() async {
-    await _storage.delete(key: _boxsyncPublicPasswordKey);
-  }
-
-  static Future<void> saveBoxSyncPublicToken(String token) async {
-    await _storage.write(key: _boxsyncPublicTokenKey, value: token);
-  }
-
-  static Future<String?> getBoxSyncPublicToken() async {
-    return await _storage.read(key: _boxsyncPublicTokenKey);
-  }
-
-  static Future<void> deleteBoxSyncPublicToken() async {
-    await _storage.delete(key: _boxsyncPublicTokenKey);
-  }
-
   // ==================== 通用方法 ====================
   static Future<void> clearAll() async {
     await _storage.deleteAll();

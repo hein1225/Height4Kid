@@ -24,6 +24,9 @@ class _NextcloudConfigScreenState extends State<NextcloudConfigScreen> {
   bool _isLoading = false;
   bool _isTesting = false;
   bool _obscurePassword = true;
+  bool _isEditing = false;
+  String? _statusMessage;
+  bool _isError = false;
 
   @override
   void initState() {
@@ -95,7 +98,12 @@ class _NextcloudConfigScreenState extends State<NextcloudConfigScreen> {
 
     await appProvider.updateNextcloudConfig(config);
 
-    setState(() => _isLoading = false);
+    setState(() {
+      _isLoading = false;
+      _isEditing = false;
+      _statusMessage = '配置已保存成功';
+      _isError = false;
+    });
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -104,13 +112,13 @@ class _NextcloudConfigScreenState extends State<NextcloudConfigScreen> {
           backgroundColor: Colors.green,
         ),
       );
-      Navigator.pop(context);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final appProvider = context.watch<AppProvider>();
+    final config = appProvider.syncConfig.nextcloud;
     final isPink = appProvider.currentTheme == 'pink';
     final primaryColor = isPink ? AppTheme.pinkPrimary : AppTheme.bluePrimary;
 
@@ -161,12 +169,11 @@ class _NextcloudConfigScreenState extends State<NextcloudConfigScreen> {
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // 说明卡片
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 说明卡片
+                    if (!config.isConfigured || _isEditing)
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
@@ -209,184 +216,53 @@ class _NextcloudConfigScreenState extends State<NextcloudConfigScreen> {
                           ],
                         ),
                       ),
+                    if (!config.isConfigured || _isEditing)
                       const SizedBox(height: 24),
-                      // 服务器地址
-                      _buildTextField(
-                        controller: _serverUrlController,
-                        label: 'Nextcloud 服务器地址',
-                        hint: 'https://cloud.example.com',
-                        icon: Icons.link,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return '请输入服务器地址';
-                          }
-                          if (!value.startsWith('http://') &&
-                              !value.startsWith('https://')) {
-                            return '地址必须以 http:// 或 https:// 开头';
-                          }
-                          return null;
-                        },
-                      ),
+                    // 如果已配置，显示配置摘要；否则显示输入表单
+                    if (config.isConfigured && !_isEditing)
+                      _buildConfigSummary(config, primaryColor)
+                    else
+                      _buildConfigForm(primaryColor),
+                    const SizedBox(height: 24),
+                    // 状态显示
+                    if (_statusMessage != null) _buildStatusCard(),
+                    const SizedBox(height: 24),
+                    // 手动同步按钮
+                    if (config.isConfigured) ...[
+                      const Divider(),
                       const SizedBox(height: 16),
-                      // 用户名
-                      _buildTextField(
-                        controller: _usernameController,
-                        label: '用户名',
-                        hint: '请输入用户名',
-                        icon: Icons.person,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return '请输入用户名';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      // 密码
-                      _buildTextField(
-                        controller: _passwordController,
-                        label: '密码 / 应用专用密码',
-                        hint: '请输入密码或应用专用密码',
-                        icon: Icons.lock,
-                        obscureText: _obscurePassword,
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                            color: AppTheme.textLight,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _obscurePassword = !_obscurePassword;
-                            });
-                          },
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return '请输入密码';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      // 远程路径
-                      _buildTextField(
-                        controller: _remotePathController,
-                        label: '远程路径',
-                        hint: '/Apps/Height4Kid/',
-                        icon: Icons.folder,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return '请输入远程路径';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 32),
-                      // 测试连接按钮
-                      SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: OutlinedButton.icon(
-                          onPressed: _isTesting ? null : _testConnection,
-                          icon: _isTesting
-                              ? SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: primaryColor,
-                                  ),
-                                )
-                              : Icon(Icons.network_check, color: primaryColor),
-                          label: Text(
-                            _isTesting ? '测试中...' : '测试连接',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: primaryColor,
-                            ),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: primaryColor),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
+                      const Text(
+                        '手动同步',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textDark,
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // 保存按钮
-                      SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _saveConfig,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: primaryColor,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildSyncButton(
+                              label: '上传到云端',
+                              icon: Icons.upload,
+                              color: Colors.green,
+                              onTap: () => _manualSync(true),
                             ),
-                            elevation: 0,
                           ),
-                          child: _isLoading
-                              ? const SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Text(
-                                  '保存配置',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                        ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildSyncButton(
+                              label: '从云端下载',
+                              icon: Icons.download,
+                              color: Colors.blue,
+                              onTap: () => _manualSync(false),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 24),
-                      // 手动同步按钮
-                      if (appProvider.syncConfig.nextcloud.isConfigured) ...[
-                        const Divider(),
-                        const SizedBox(height: 16),
-                        const Text(
-                          '手动同步',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.textDark,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildSyncButton(
-                                label: '上传到云端',
-                                icon: Icons.upload,
-                                color: Colors.green,
-                                onTap: () => _manualSync(true),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _buildSyncButton(
-                                label: '从云端下载',
-                                icon: Icons.download,
-                                color: Colors.blue,
-                                onTap: () => _manualSync(false),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
                     ],
-                  ),
+                  ],
                 ),
               ),
             ),
@@ -630,6 +506,355 @@ class _NextcloudConfigScreenState extends State<NextcloudConfigScreen> {
   }
 
   String _formatDateTime(DateTime time) {
+    return '${time.year}-${time.month.toString().padLeft(2, '0')}-${time.day.toString().padLeft(2, '0')} '
+        '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+  }
+
+  /// 构建配置摘要视图
+  Widget _buildConfigSummary(NextcloudConfig config, Color primaryColor) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0082C9).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.cloud_done,
+                  color: Color(0xFF0082C9),
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '已配置',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textDark,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '上次同步: ${_formatLastSyncTime(config.lastSyncTime)}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: AppTheme.textLight,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          const Divider(),
+          const SizedBox(height: 16),
+          _buildSummaryItem(
+            icon: Icons.link,
+            label: '服务器地址',
+            value: config.serverUrl,
+          ),
+          const SizedBox(height: 12),
+          _buildSummaryItem(
+            icon: Icons.person,
+            label: '用户名',
+            value: config.username,
+          ),
+          const SizedBox(height: 12),
+          _buildSummaryItem(
+            icon: Icons.lock,
+            label: '密码',
+            value: '********',
+            isPassword: true,
+          ),
+          const SizedBox(height: 12),
+          _buildSummaryItem(
+            icon: Icons.folder,
+            label: '远程路径',
+            value: config.remotePath,
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                setState(() {
+                  _isEditing = true;
+                });
+              },
+              icon: const Icon(Icons.edit),
+              label: const Text('重新设置'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: primaryColor,
+                side: BorderSide(color: primaryColor),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 构建配置表单
+  Widget _buildConfigForm(Color primaryColor) {
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 服务器地址
+          _buildTextField(
+            controller: _serverUrlController,
+            label: 'Nextcloud 服务器地址',
+            hint: 'https://cloud.example.com',
+            icon: Icons.link,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return '请输入服务器地址';
+              }
+              if (!value.startsWith('http://') &&
+                  !value.startsWith('https://')) {
+                return '地址必须以 http:// 或 https:// 开头';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          // 用户名
+          _buildTextField(
+            controller: _usernameController,
+            label: '用户名',
+            hint: '请输入用户名',
+            icon: Icons.person,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return '请输入用户名';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          // 密码
+          _buildTextField(
+            controller: _passwordController,
+            label: '密码 / 应用专用密码',
+            hint: '请输入密码或应用专用密码',
+            icon: Icons.lock,
+            obscureText: _obscurePassword,
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscurePassword
+                    ? Icons.visibility_off
+                    : Icons.visibility,
+                color: AppTheme.textLight,
+              ),
+              onPressed: () {
+                setState(() {
+                  _obscurePassword = !_obscurePassword;
+                });
+              },
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return '请输入密码';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          // 远程路径
+          _buildTextField(
+            controller: _remotePathController,
+            label: '远程路径',
+            hint: '/Apps/Height4Kid/',
+            icon: Icons.folder,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return '请输入远程路径';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 32),
+          // 测试连接按钮
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: OutlinedButton.icon(
+              onPressed: _isTesting ? null : _testConnection,
+              icon: _isTesting
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: primaryColor,
+                      ),
+                    )
+                  : Icon(Icons.network_check, color: primaryColor),
+              label: Text(
+                _isTesting ? '测试中...' : '测试连接',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: primaryColor,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: primaryColor),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // 保存按钮
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: ElevatedButton(
+              onPressed: _isLoading ? null : _saveConfig,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 0,
+              ),
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text(
+                      '保存配置',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 构建状态卡片
+  Widget _buildStatusCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _isError
+            ? Colors.red.withValues(alpha: 0.1)
+            : Colors.green.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: _isError
+              ? Colors.red.withValues(alpha: 0.3)
+              : Colors.green.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            _isError ? Icons.error_outline : Icons.check_circle_outline,
+            color: _isError ? Colors.red : Colors.green,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              _statusMessage!,
+              style: TextStyle(
+                color: _isError ? Colors.red : Colors.green,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 构建摘要项
+  Widget _buildSummaryItem({
+    required IconData icon,
+    required String label,
+    required String value,
+    bool isPassword = false,
+  }) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 20,
+          color: AppTheme.textLight,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppTheme.textLight,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: isPassword ? AppTheme.textLight : AppTheme.textDark,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 格式化上次同步时间
+  String _formatLastSyncTime(DateTime? time) {
+    if (time == null) return '从未同步';
     return '${time.year}-${time.month.toString().padLeft(2, '0')}-${time.day.toString().padLeft(2, '0')} '
         '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }

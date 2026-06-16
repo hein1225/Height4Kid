@@ -298,7 +298,7 @@ class _BoxSyncConfigScreenState extends State<BoxSyncConfigScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          'BoxSync 私有云配置',
+          'BoxSync 配置',
           style: TextStyle(
             color: AppTheme.textPrimary,
             fontSize: 18,
@@ -315,45 +315,12 @@ class _BoxSyncConfigScreenState extends State<BoxSyncConfigScreen> {
             _buildInfoCard(),
             const SizedBox(height: 24),
 
-            // 服务器地址
-            _buildTextField(
-              controller: _serverUrlController,
-              label: '服务器地址',
-              hint: 'http://192.168.1.100:9390',
-              icon: Icons.dns,
-              helperText: '请输入 BoxSync 服务器完整地址，包含端口号',
-            ),
-            const SizedBox(height: 16),
+            // 如果已配置，显示配置摘要；否则显示输入表单
+            if (config.isConfigured && !_isEditing)
+              _buildConfigSummary(config)
+            else
+              _buildConfigForm(),
 
-            // 用户名
-            _buildTextField(
-              controller: _usernameController,
-              label: '用户名',
-              hint: '请输入用户名',
-              icon: Icons.person,
-              helperText: '服务器管理员创建的账户名',
-            ),
-            const SizedBox(height: 16),
-
-            // 密码
-            _buildTextField(
-              controller: _passwordController,
-              label: '密码',
-              hint: '请输入密码',
-              icon: Icons.lock,
-              obscureText: _obscurePassword,
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                  color: AppTheme.textLight,
-                ),
-                onPressed: () {
-                  setState(() {
-                    _obscurePassword = !_obscurePassword;
-                  });
-                },
-              ),
-            ),
             const SizedBox(height: 24),
 
             // 状态显示
@@ -361,14 +328,215 @@ class _BoxSyncConfigScreenState extends State<BoxSyncConfigScreen> {
             const SizedBox(height: 24),
 
             // 操作按钮
-            _buildActionButtons(),
-            const SizedBox(height: 32),
+            if (!config.isConfigured || _isEditing)
+              _buildActionButtons(),
 
             // 手动同步
             if (config.enabled && config.isConfigured) _buildSyncSection(),
           ],
         ),
       ),
+    );
+  }
+
+  bool _isEditing = false;
+
+  Widget _buildConfigSummary(BoxSyncConfig config) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.purple.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.cloud_done,
+                  color: Colors.purple,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '已配置',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '上次同步: ${_formatLastSyncTime(config.lastSyncTime)}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppTheme.textLight,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          const Divider(),
+          const SizedBox(height: 16),
+          _buildSummaryItem(
+            icon: Icons.dns,
+            label: '服务器地址',
+            value: config.serverUrl,
+          ),
+          const SizedBox(height: 12),
+          _buildSummaryItem(
+            icon: Icons.person,
+            label: '用户名',
+            value: config.username,
+          ),
+          const SizedBox(height: 12),
+          _buildSummaryItem(
+            icon: Icons.lock,
+            label: '密码',
+            value: '********',
+            isPassword: true,
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                setState(() {
+                  _isEditing = true;
+                });
+              },
+              icon: const Icon(Icons.edit),
+              label: const Text('重新设置'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppTheme.primary,
+                side: BorderSide(color: AppTheme.primary),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryItem({
+    required IconData icon,
+    required String label,
+    required String value,
+    bool isPassword = false,
+  }) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 20,
+          color: AppTheme.textLight,
+        ),
+        const SizedBox(width: 12),
+        Text(
+          '$label: ',
+          style: TextStyle(
+            fontSize: 14,
+            color: AppTheme.textLight,
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: isPassword ? AppTheme.textLight : AppTheme.textPrimary,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildConfigForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 服务器地址
+        _buildTextField(
+          controller: _serverUrlController,
+          label: '服务器地址',
+          hint: 'http://192.168.1.100:9390',
+          icon: Icons.dns,
+          helperText: '请输入 BoxSync 服务器完整地址，包含端口号',
+        ),
+        const SizedBox(height: 16),
+
+        // 用户名
+        _buildTextField(
+          controller: _usernameController,
+          label: '用户名',
+          hint: '请输入用户名',
+          icon: Icons.person,
+          helperText: '服务器管理员创建的账户名',
+        ),
+        const SizedBox(height: 16),
+
+        // 密码
+        _buildTextField(
+          controller: _passwordController,
+          label: '密码',
+          hint: '请输入密码',
+          icon: Icons.lock,
+          obscureText: _obscurePassword,
+          suffixIcon: IconButton(
+            icon: Icon(
+              _obscurePassword ? Icons.visibility_off : Icons.visibility,
+              color: AppTheme.textLight,
+            ),
+            onPressed: () {
+              setState(() {
+                _obscurePassword = !_obscurePassword;
+              });
+            },
+          ),
+        ),
+        if (_isEditing) ...[
+          const SizedBox(height: 12),
+          TextButton.icon(
+            onPressed: () {
+              setState(() {
+                _isEditing = false;
+              });
+            },
+            icon: const Icon(Icons.cancel),
+            label: const Text('取消编辑'),
+          ),
+        ],
+      ],
     );
   }
 
